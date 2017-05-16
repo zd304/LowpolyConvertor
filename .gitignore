@@ -16,6 +16,8 @@
 # Fortran module files
 *.mod
 *.smod
+*.sdf
+*.opensdf
 
 # Compiled Static libraries
 *.lai
@@ -27,3 +29,4 @@
 *.exe
 *.out
 *.app
+Debug/
