@@ -27,4 +27,7 @@
 *.exe
 *.out
 *.app
-Debug/
+Collapse/Debug/
+Debug/Collapse.ilk
+Debug/Collapse.pdb
+Debug/libfbxsdk.dll
