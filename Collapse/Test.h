@@ -12,6 +12,7 @@ struct CustomVertex
 	D3DXVECTOR3 pos;
 	D3DXVECTOR3 normal;
 	DWORD color;
+	D3DXVECTOR2 uv;
 };
 
 class Test

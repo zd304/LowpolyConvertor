@@ -24,6 +24,12 @@
     <ClCompile Include="Collapse.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="FBXHelper.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="FBXCommon.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Test.h">
@@ -33,6 +39,12 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="list.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="FBXHelper.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="FBXCommon.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

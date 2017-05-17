@@ -1,5 +1,6 @@
 #include "Test.h"
 #include "Collapse.h"
+#include "FBXHelper.h"
 #include <fstream>
 
 Test::Test()
@@ -17,7 +18,7 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 	mDevice = device;
 	mHwnd = hwnd;
 
-	std::ifstream file;
+	/*std::ifstream file;
 	file.open("bunny_vb.txt", std::ios::binary);
 	const int LINE_LENGTH = 512;
 	char line[LINE_LENGTH];
@@ -95,39 +96,42 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 		ids.push_back((unsigned int)v[1]);
 		ids.push_back((unsigned int)v[2]);
 	}
-	file.close();
+	file.close();*/
 
-	size_t vertexNum = mVertices.size();
-	size_t faceNum = ids.size() / 3;
-	fvf = D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_DIFFUSE;
+	FBXHelper::BeginFBXHelper("humanoid.fbx");
+
+	CustomVertex* pvb = NULL;
+	int v_stride = 0;
+	int v_count = 0;
+	unsigned int* pib = NULL;
+	int i_stride = 0;
+	int i_count = 0;
+	FBXHelper::GetMesh((void**)&pvb, v_stride, v_count, (void**)&pib, i_stride, i_count);
+
+	size_t vertexNum = v_count;//mVertices.size();
+	size_t faceNum = i_count / 3;//ids.size() / 3;
+	fvf = D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_DIFFUSE | D3DFVF_TEX1;
 	HRESULT hr = D3DXCreateMeshFVF(faceNum, vertexNum, D3DXMESH_32BIT, fvf, device, &mMesh);
 	if (FAILED(hr))
 	{
 		return;
 	}
-	CustomVertex* pData = NULL;
-	mMesh->LockVertexBuffer(0, (void**)&pData);
-	for (size_t i = 0; i < vertexNum; ++i)
-	{
-		pData[i].pos = mVertices[i].pos;
-		pData[i].color = mVertices[i].color;
-	}
+	CustomVertex* vertices = NULL;
+	mMesh->LockVertexBuffer(0, (void**)&vertices);
+	memcpy(vertices, pvb, v_stride * v_count);
 	mMesh->UnlockVertexBuffer();
 
 	unsigned int* indices = NULL;
 	mMesh->LockIndexBuffer(0, (void**)&indices);
-	for (size_t i = 0; i < faceNum * 3; ++i)
-	{
-		indices[i] = ids[i];
-	}
+	memcpy(indices, pib, i_stride * i_count);
 	mMesh->UnlockVertexBuffer();
 
 	D3DXComputeNormals(mMesh, 0);
 
 	D3DXMATRIX matView, matProj;
 	D3DXMatrixPerspectiveFovLH(&matProj, D3DX_PI / 4.0f, 800.0f / 600.0f, 0.1f, 1000.0f);
-	D3DXMatrixLookAtLH(&matView, &D3DXVECTOR3(0.0f, 0.0f, -0.5f),
-		&D3DXVECTOR3(0.0f, 0.0f, 0.5f), &D3DXVECTOR3(0.0f, 1.0f, 0.0f));
+	D3DXMatrixLookAtLH(&matView, &D3DXVECTOR3(0.0f, 200.0f, -200.0f),
+		&D3DXVECTOR3(0.0f, 0.0f, 200.0f), &D3DXVECTOR3(0.0f, 1.0f, 0.0f));
 	D3DXMatrixTranslation(&mMatWorld, 0.0f, -0.1f, 0.0f);
 
 	device->SetTransform(D3DTS_PROJECTION, &matProj);
@@ -149,11 +153,10 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 	
 	CustomVertex* vs = NULL;
 	mMesh->LockVertexBuffer(0, (void**)&vs);
+	Collapse::BeginCollapse(vs, sizeof(CustomVertex), v_count, 0,
+		pib, sizeof(unsigned int), i_count);
 
-	Collapse::BeginCollapse(vs, sizeof(CustomVertex), mVertices.size(), 0,
-		&(ids[0]), sizeof(unsigned int), ids.size());
-
-	Collapse::DoCollapse(1000);
+	Collapse::DoCollapse(v_count / 10);
 
 	Collapse::Buffer* buffer = Collapse::GetBuffer();
 	mMesh->UnlockVertexBuffer();
@@ -169,22 +172,24 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 	{
 		return;
 	}
-	void* pvb = NULL;
-	mMesh->LockVertexBuffer(0, (void**)&pvb);
-	memcpy(pvb, buffer->vertices, buffer->v_count * buffer->v_stride);
+	void* vb = NULL;
+	mMesh->LockVertexBuffer(0, (void**)&vb);
+	memcpy(vb, buffer->vertices, buffer->v_count * buffer->v_stride);
 	mMesh->UnlockVertexBuffer();
-	void* pib = NULL;
-	mMesh->LockIndexBuffer(0, (void**)&pib);
-	memcpy(pib, buffer->indices, buffer->i_count * buffer->i_stride);
+	void* ib = NULL;
+	mMesh->LockIndexBuffer(0, (void**)&ib);
+	memcpy(ib, buffer->indices, buffer->i_count * buffer->i_stride);
 	mMesh->UnlockIndexBuffer();
 
 	Collapse::EndCollapse();
+
+	FBXHelper::EndFBXHelper();
 }
 
 void Test::OnUpdate()
 {
 	D3DXMATRIX matRot;
-	D3DXMatrixRotationX(&matRot, 0.0001f);
+	D3DXMatrixRotationY(&matRot, 0.0001f);
 	D3DXMatrixMultiply(&mMatWorld, &mMatWorld, &matRot);
 	mDevice->SetTransform(D3DTS_WORLD, &mMatWorld);
 
