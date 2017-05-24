@@ -26,6 +26,17 @@ namespace FBXHelper
 		int nIndexCount = 0;
 	};
 
+	struct FbxBoneWeight
+	{
+		List<std::string> boneName;
+		List<double> weight;
+	};
+
+	struct FbxSkinInfo
+	{
+		FbxBoneWeight* weights = NULL;
+	};
+
 	class FbxModelList
 	{
 	public:
@@ -33,6 +44,7 @@ namespace FBXHelper
 		~FbxModelList();
 	public:
 		List<FbxModel*> mMeshes;
+		List<FbxSkinInfo*> mSkins;
 	};
 
 	struct FbxBone

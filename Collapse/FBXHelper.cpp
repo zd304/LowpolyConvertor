@@ -12,6 +12,7 @@ namespace FBXHelper
 	FbxModelList::FbxModelList()
 	{
 		mMeshes.Clear();
+		mSkins.Clear();
 	}
 
 	FbxModelList::~FbxModelList()
@@ -35,6 +36,17 @@ namespace FBXHelper
 			delete mesh;
 		}
 		mMeshes.Clear();
+		for (int i = 0; i < mSkins.Count(); ++i)
+		{
+			FbxSkinInfo* skin = mSkins[i];
+			if (!skin) continue;
+			if (skin->weights)
+			{
+				delete[] skin->weights;
+			}
+			delete skin;
+		}
+		mSkins.Clear();
 	}
 
 	FbxBoneMap::FbxBoneMap()
@@ -216,7 +228,36 @@ namespace FBXHelper
 		ProcessNode(pFBXScene->GetRootNode());
 
 		return rst;
-	}	
+	}
+
+	void ProcessSkin(FbxMesh* pMesh, int vtxCount)
+	{
+		FbxSkinInfo* skinInfo = new FbxSkinInfo();
+		pMeshList->mSkins.Add(skinInfo);
+		int skinCount = pMesh->GetDeformerCount(FbxDeformer::eSkin);
+		if (skinCount == 0)
+			return;
+		skinInfo->weights = new FbxBoneWeight[vtxCount];
+		FbxSkin* skinDeformer = (FbxSkin *)pMesh->GetDeformer(0, FbxDeformer::eSkin);
+
+		for (int i = 0; i < skinDeformer->GetClusterCount(); ++i)
+		{
+			FbxCluster* cluster = skinDeformer->GetCluster(i);
+			FbxNode* link = cluster->GetLink();
+			if (!link) continue;
+			const char* boneName = link->GetName();
+			int* indices = cluster->GetControlPointIndices();
+			double* weights = cluster->GetControlPointWeights();
+			for (int j = 0; j < cluster->GetControlPointIndicesCount(); ++j)
+			{
+				int vtxIndex = indices[j];
+				double weight = weights[j];
+				FbxBoneWeight& bw = skinInfo->weights[vtxIndex];
+				bw.boneName.Add(boneName);
+				bw.weight.Add(weight);
+			}
+		}
+	}
 
 	void ProcessAnimation(FbxNode* pNode, FbxBone* bone)
 	{
@@ -472,6 +513,7 @@ namespace FBXHelper
 			}
 		}
 		pMeshList->mMeshes.Add(meshData);
+		ProcessSkin(pMesh, meshData->nVertexCount);
 	}
 
 	void ProcessNode(FbxNode* pNode, FbxNode* pParent)
