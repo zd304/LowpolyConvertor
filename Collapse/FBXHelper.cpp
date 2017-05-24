@@ -1,24 +1,197 @@
 #include "FBXHelper.h"
-#include <d3dx9.h>
+#include <string>
 
 namespace FBXHelper
 {
 	FbxManager* pFBXSDKManager = NULL;
 	FbxScene* pFBXScene = NULL;
+	FbxModelList* pMeshList = NULL;
+	FbxBoneMap* pSkeleton = NULL;
+	FbxAnimationEvaluator* pAnimEvaluator = NULL;
 
-	struct FbxMeshVertex_Tmp
+	FbxModelList::FbxModelList()
 	{
-		D3DXVECTOR3 pos;
-		D3DXVECTOR3 normal;
-		unsigned int color;
-		D3DXVECTOR2 uv;
-	};
-	FbxMeshVertex_Tmp* pVB = NULL;
-	int nVertexCount = 0;
-	unsigned int* pIB = NULL;
-	int nIndexCount = 0;
+		mMeshes.Clear();
+	}
 
-	void ProcessNode(FbxNode* pNode);
+	FbxModelList::~FbxModelList()
+	{
+		for (int i = 0; i < mMeshes.Count(); ++i)
+		{
+			FbxModel* mesh = mMeshes[i];
+			if (!mesh) continue;
+			if (mesh->pVB)
+			{
+				delete[] mesh->pVB;
+				mesh->pVB = NULL;
+			}
+			if (mesh->pIB)
+			{
+				delete[] mesh->pIB;
+				mesh->pIB = NULL;
+			}
+			mesh->nIndexCount = 0;
+			mesh->nVertexCount = 0;
+			delete mesh;
+		}
+		mMeshes.Clear();
+	}
+
+	FbxBoneMap::FbxBoneMap()
+	{
+
+	}
+
+	FbxBoneMap::~FbxBoneMap()
+	{
+		std::map<std::string, FbxBone*>::iterator it;
+		for (it = mBones.begin(); it != mBones.end(); ++it)
+		{
+			FbxBone* bone = it->second;
+			if (!bone)
+				continue;
+			delete bone;
+		}
+		mBones.clear();
+	}
+
+	class AnimationCurve;
+	struct LocalCurve;
+
+	class BoneAniamtion
+	{
+	public:
+		BoneAniamtion();
+		~BoneAniamtion();
+	public:
+		typedef std::map<FbxBone*, AnimationCurve*>::iterator IT_BA;
+		std::map<FbxBone*, AnimationCurve*> mBoneCurves;
+	};
+
+	class AnimationCurve
+	{
+	public:
+		AnimationCurve();
+		~AnimationCurve();
+	public:
+		typedef std::map<std::string, LocalCurve*>::iterator IT_AC;
+		std::map<std::string, LocalCurve*> animCurves;
+	};
+
+	struct LocalCurve
+	{
+		FbxAnimCurve* translationX = NULL;
+		FbxAnimCurve* translationY = NULL;
+		FbxAnimCurve* translationZ = NULL;
+		FbxAnimCurve* rotationX = NULL;
+		FbxAnimCurve* rotationY = NULL;
+		FbxAnimCurve* rotationZ = NULL;
+		FbxAnimCurve* scaleX = NULL;
+		FbxAnimCurve* scaleY = NULL;
+		FbxAnimCurve* scaleZ = NULL;
+	};
+
+	D3DXMATRIX ToD3DMatrix(const FbxAMatrix& mat)
+	{
+		return D3DXMATRIX(
+			(float)mat.Get(0, 0), (float)mat.Get(0, 1), (float)mat.Get(0, 2), (float)mat.Get(0, 3),
+			(float)mat.Get(1, 0), (float)mat.Get(1, 1), (float)mat.Get(1, 2), (float)mat.Get(1, 3),
+			(float)mat.Get(2, 0), (float)mat.Get(2, 1), (float)mat.Get(2, 2), (float)mat.Get(2, 3),
+			(float)mat.Get(3, 0), (float)mat.Get(3, 1), (float)mat.Get(3, 2), (float)mat.Get(3, 3));
+	}
+
+	D3DXMATRIX FbxAnimationEvaluator::matIdentity = D3DXMATRIX(
+		1.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f
+		);
+
+	FbxAnimationEvaluator::FbxAnimationEvaluator()
+	{
+		mCurveData = new BoneAniamtion();
+	}
+
+	FbxAnimationEvaluator::~FbxAnimationEvaluator()
+	{
+		if (mCurveData)
+		{
+			BoneAniamtion* p = (BoneAniamtion*)mCurveData;
+			delete p;
+			mCurveData = NULL;
+		}
+	}
+
+	D3DXMATRIX FbxAnimationEvaluator::Evaluator(FbxBone* bone, const char* animName, float second)
+	{
+		BoneAniamtion* p = (BoneAniamtion*)mCurveData;
+		BoneAniamtion::IT_BA itba = p->mBoneCurves.find(bone);
+		if (itba == p->mBoneCurves.end())
+			return matIdentity;
+		AnimationCurve* curve = itba->second;
+		AnimationCurve::IT_AC itac = curve->animCurves.find(animName);
+		if (itac == curve->animCurves.end())
+			return matIdentity;
+		LocalCurve* lclCurve = itac->second;
+
+		FbxTime t;
+		t.SetSecondDouble((double)second);
+
+		FbxVector4 translation(0.0, 0.0, 0.0);
+		FbxVector4 rotation(0.0, 0.0, 0.0);
+		FbxVector4 scaling(1.0f, 1.0, 1.0, 1.0);
+		if (lclCurve->translationX) translation.mData[0] = lclCurve->translationX->Evaluate(t);
+		if (lclCurve->translationY) translation.mData[1] = lclCurve->translationY->Evaluate(t);
+		if (lclCurve->translationZ) translation.mData[2] = lclCurve->translationZ->Evaluate(t);
+		if (lclCurve->rotationX) rotation.mData[0] = lclCurve->rotationX->Evaluate(t);
+		if (lclCurve->rotationY) rotation.mData[1] = lclCurve->rotationY->Evaluate(t);
+		if (lclCurve->rotationZ) rotation.mData[2] = lclCurve->rotationZ->Evaluate(t);
+		if (lclCurve->scaleX) scaling.mData[0] = lclCurve->scaleX->Evaluate(t);
+		if (lclCurve->scaleY) scaling.mData[1] = lclCurve->scaleY->Evaluate(t);
+		if (lclCurve->scaleZ) scaling.mData[2] = lclCurve->scaleZ->Evaluate(t);
+		FbxAMatrix mat = FbxAMatrix(translation, rotation, scaling);
+		return ToD3DMatrix(mat);
+	}
+
+	BoneAniamtion::BoneAniamtion()
+	{
+		mBoneCurves.clear();
+	}
+
+	BoneAniamtion::~BoneAniamtion()
+	{
+		std::map<FbxBone*, AnimationCurve*>::iterator it;
+		for (it = mBoneCurves.begin(); it != mBoneCurves.end(); ++it)
+		{
+			AnimationCurve* anim = it->second;
+			if (anim)
+			{
+				delete anim;
+			}
+		}
+		mBoneCurves.clear();
+	}
+
+	AnimationCurve::AnimationCurve()
+	{
+		animCurves.clear();
+	}
+
+	AnimationCurve::~AnimationCurve()
+	{
+		std::map<std::string, LocalCurve*>::iterator it;
+		for (it = animCurves.begin(); it != animCurves.end(); ++it)
+		{
+			LocalCurve* curves = it->second;
+			if (curves)
+			{
+				delete curves;
+			}
+		}
+		animCurves.clear();
+	}
+
+	void ProcessNode(FbxNode* pNode, FbxNode* pParent = NULL);
 
 	bool BeginFBXHelper(const char* fileName)
 	{
@@ -32,234 +205,98 @@ namespace FBXHelper
 			return false;
 		}
 
+		pMeshList = new FbxModelList();
+
+		int numStacks = pFBXScene->GetSrcObjectCount<fbxsdk_2015_1::FbxAnimStack>();
+		if (numStacks > 0)
+		{
+			pAnimEvaluator = new FbxAnimationEvaluator();
+		}
+
 		ProcessNode(pFBXScene->GetRootNode());
+
+		return rst;
+	}	
+
+	void ProcessAnimation(FbxNode* pNode, FbxBone* bone)
+	{
+		if (!pAnimEvaluator)
+			return;
+		BoneAniamtion* boneAnim = (BoneAniamtion*)pAnimEvaluator->mCurveData;
+		AnimationCurve* animCurve = NULL;
+		BoneAniamtion::IT_BA itba = boneAnim->mBoneCurves.find(bone);
+		if (itba == boneAnim->mBoneCurves.end())
+		{
+			animCurve = new AnimationCurve();
+			boneAnim->mBoneCurves[bone] = animCurve;
+		}
+		else
+		{
+			animCurve = boneAnim->mBoneCurves[bone];
+		}
+		if (animCurve == NULL)
+			return;
+
+		int numStacks = pFBXScene->GetSrcObjectCount<fbxsdk_2015_1::FbxAnimStack>();
+		for (int i = 0; i < numStacks; ++i)
+		{
+			fbxsdk_2015_1::FbxAnimStack* pAnimStack = pFBXScene->GetSrcObject<fbxsdk_2015_1::FbxAnimStack>(i);
+			std::string animName = pAnimStack->GetName();
+
+			int numAnimLayers = pAnimStack->GetMemberCount<FbxAnimLayer>();
+			//for (int j = 0; j < numAnimLayers; ++j)
+			//{
+			//	FbxAnimLayer* pLayer = pAnimStack->GetMember<FbxAnimLayer>(j);
+			//}
+			// ÔÝ²»¿¼ÂÇBlend;
+			if (numAnimLayers > 0)
+			{
+				FbxAnimLayer* pLayer = pAnimStack->GetMember<FbxAnimLayer>(0);
+				if (!pLayer)
+					return;
+				LocalCurve* curves = new LocalCurve();
+				curves->translationX = pNode->LclTranslation.GetCurve(pLayer, FBXSDK_CURVENODE_COMPONENT_X);
+				curves->translationY = pNode->LclTranslation.GetCurve(pLayer, FBXSDK_CURVENODE_COMPONENT_Y);
+				curves->translationZ = pNode->LclTranslation.GetCurve(pLayer, FBXSDK_CURVENODE_COMPONENT_Z);
+				curves->rotationX = pNode->LclRotation.GetCurve(pLayer, FBXSDK_CURVENODE_COMPONENT_X);
+				curves->rotationY = pNode->LclRotation.GetCurve(pLayer, FBXSDK_CURVENODE_COMPONENT_Y);
+				curves->rotationZ = pNode->LclRotation.GetCurve(pLayer, FBXSDK_CURVENODE_COMPONENT_Z);
+				curves->scaleX = pNode->LclScaling.GetCurve(pLayer, FBXSDK_CURVENODE_COMPONENT_X);
+				curves->scaleY = pNode->LclScaling.GetCurve(pLayer, FBXSDK_CURVENODE_COMPONENT_Y);
+				curves->scaleZ = pNode->LclScaling.GetCurve(pLayer, FBXSDK_CURVENODE_COMPONENT_Z);
+				animCurve->animCurves[animName] = curves;
+			}
+		}
 	}
 
-	void ReadVertex(FbxMesh* pMesh, int ctrlPointIndex)
+	void ProcessSkeleton(FbxNode* pNode, FbxNode* pParent)
 	{
-		if (ctrlPointIndex < 0 || ctrlPointIndex > nVertexCount)
-			return;
-		FbxVector4* pCtrlPoint = pMesh->GetControlPoints();
-
-		FbxVector4 pt = pCtrlPoint[ctrlPointIndex];
-
-		FbxMeshVertex_Tmp& vtx = pVB[ctrlPointIndex];
-		vtx.pos.x = (float)pt.mData[0];
-		vtx.pos.y = (float)pt.mData[1];
-		vtx.pos.z = (float)pt.mData[2];
-	}
-
-	void ReadColor(FbxMesh* pMesh, int ctrlPointIndex, int vertexCounter)
-	{
-		if (ctrlPointIndex < 0 || ctrlPointIndex > nVertexCount)
-			return;
-		if (pMesh->GetElementVertexColorCount() < 1)
+		FbxNode* parent = NULL;
+		if (pParent)
 		{
-			return;
-		}
-
-		FbxMeshVertex_Tmp& vtx = pVB[ctrlPointIndex];
-		FbxGeometryElementVertexColor* pVertexColor = pMesh->GetElementVertexColor(0);
-		double w = 0, x = 0, y = 0, z = 0;
-		switch (pVertexColor->GetMappingMode())
-		{
-		case FbxGeometryElement::eByControlPoint:
-		{
-			switch (pVertexColor->GetReferenceMode())
+			FbxNodeAttribute* attributeType = pParent->GetNodeAttribute();
+			if (attributeType && attributeType->GetAttributeType() == FbxNodeAttribute::eSkeleton)
 			{
-			case FbxGeometryElement::eDirect:
-			{
-				x = pVertexColor->GetDirectArray().GetAt(ctrlPointIndex).mRed;
-				y = pVertexColor->GetDirectArray().GetAt(ctrlPointIndex).mGreen;
-				z = pVertexColor->GetDirectArray().GetAt(ctrlPointIndex).mBlue;
-				w = pVertexColor->GetDirectArray().GetAt(ctrlPointIndex).mAlpha;
-			}
-			break;
-
-			case FbxGeometryElement::eIndexToDirect:
-			{
-				int id = pVertexColor->GetIndexArray().GetAt(ctrlPointIndex);
-				x = pVertexColor->GetDirectArray().GetAt(id).mRed;
-				y = pVertexColor->GetDirectArray().GetAt(id).mGreen;
-				z = pVertexColor->GetDirectArray().GetAt(id).mBlue;
-				w = pVertexColor->GetDirectArray().GetAt(id).mAlpha;
-			}
-			break;
-
-			default:
-				break;
+				parent = pParent;
 			}
 		}
-		break;
+		if (!pSkeleton)
+			pSkeleton = new FbxBoneMap();
 
-		case FbxGeometryElement::eByPolygonVertex:
+		FbxBone* bone = new FbxBone();
+		bone->id = pSkeleton->mBones.size();
+		bone->name = pNode->GetName();
+		if (parent)
 		{
-			switch (pVertexColor->GetReferenceMode())
-			{
-			case FbxGeometryElement::eDirect:
-			{
-				x = pVertexColor->GetDirectArray().GetAt(vertexCounter).mRed;
-				y = pVertexColor->GetDirectArray().GetAt(vertexCounter).mGreen;
-				z = pVertexColor->GetDirectArray().GetAt(vertexCounter).mBlue;
-				w = pVertexColor->GetDirectArray().GetAt(vertexCounter).mAlpha;
-			}
-			break;
-			case FbxGeometryElement::eIndexToDirect:
-			{
-				int id = pVertexColor->GetIndexArray().GetAt(vertexCounter);
-				x = pVertexColor->GetDirectArray().GetAt(id).mRed;
-				y = pVertexColor->GetDirectArray().GetAt(id).mGreen;
-				z = pVertexColor->GetDirectArray().GetAt(id).mBlue;
-				w = pVertexColor->GetDirectArray().GetAt(id).mAlpha;
-			}
-			break;
-			default:
-				break;
-			}
+			FbxBone* parentBone = pSkeleton->mBones[parent->GetName()];
+			bone->parent = parentBone;
+			parentBone->children.push_back(bone);
 		}
-		break;
-		}
+		FbxAMatrix matBindPose = pNode->EvaluateGlobalTransform();
+		bone->bindPose = ToD3DMatrix(matBindPose);
+		pSkeleton->mBones[bone->name] = bone;
 
-		unsigned int a = (unsigned int)(w * 255.0);
-		unsigned int r = (unsigned int)(x * 255.0);
-		unsigned int g = (unsigned int)(y * 255.0);
-		unsigned int b = (unsigned int)(z * 255.0);
-		vtx.color = b | (g << 8) | (r << 16) | (a << 24);
-	}
-
-	void ReadUV(FbxMesh* pMesh, int ctrlPointIndex, int textureUVIndex, int uvLayer)
-	{
-		if (ctrlPointIndex < 0 || ctrlPointIndex > nVertexCount)
-			return;
-		if (uvLayer >= 2 || pMesh->GetElementUVCount() <= uvLayer)
-		{
-			return;
-		}
-
-		FbxGeometryElementUV* pVertexUV = pMesh->GetElementUV(uvLayer);
-		FbxMeshVertex_Tmp& vtx = pVB[ctrlPointIndex];
-
-		switch (pVertexUV->GetMappingMode())
-		{
-		case FbxGeometryElement::eByControlPoint:
-		{
-			switch (pVertexUV->GetReferenceMode())
-			{
-			case FbxGeometryElement::eDirect:
-			{
-				FbxVector2 pt = pVertexUV->GetDirectArray().GetAt(ctrlPointIndex);
-				vtx.uv.x = (float)pt.mData[0];
-				vtx.uv.y = (float)pt.mData[1];
-			}
-			break;
-
-			case FbxGeometryElement::eIndexToDirect:
-			{
-				int id = pVertexUV->GetIndexArray().GetAt(ctrlPointIndex);
-				FbxVector2 pt = pVertexUV->GetDirectArray().GetAt(id);
-				vtx.uv.x = (float)pt.mData[0];
-				vtx.uv.y = (float)pt.mData[1];
-			}
-			break;
-
-			default:
-				break;
-			}
-		}
-		break;
-
-		case FbxGeometryElement::eByPolygonVertex:
-		{
-			switch (pVertexUV->GetReferenceMode())
-			{
-			case FbxGeometryElement::eDirect:
-			case FbxGeometryElement::eIndexToDirect:
-			{
-				FbxVector2 pt = pVertexUV->GetDirectArray().GetAt(textureUVIndex);
-				vtx.uv.x = (float)pt.mData[0];
-				vtx.uv.y = (float)pt.mData[1];
-			}
-			break;
-
-			default:
-				break;
-			}
-		}
-		break;
-		}
-	}
-	
-	void ReadNormal(FbxMesh* pMesh, int ctrlPointIndex, int vertexCounter)
-	{
-		if (ctrlPointIndex < 0 || ctrlPointIndex > nVertexCount)
-			return;
-		if (pMesh->GetElementNormalCount() < 1)
-		{
-			return;
-		}
-
-		FbxMeshVertex_Tmp& vtx = pVB[ctrlPointIndex];
-		FbxGeometryElementNormal* leNormal = pMesh->GetElementNormal(0);
-		switch (leNormal->GetMappingMode())
-		{
-		case FbxGeometryElement::eByControlPoint:
-		{
-			switch (leNormal->GetReferenceMode())
-			{
-			case FbxGeometryElement::eDirect:
-			{
-				FbxVector4 v = leNormal->GetDirectArray().GetAt(ctrlPointIndex);
-				vtx.normal.x = (float)v.mData[0];
-				vtx.normal.y = (float)v.mData[1];
-				vtx.normal.z = (float)v.mData[2];
-			}
-			break;
-
-			case FbxGeometryElement::eIndexToDirect:
-			{
-				int id = leNormal->GetIndexArray().GetAt(ctrlPointIndex);
-				FbxVector4 v = leNormal->GetDirectArray().GetAt(id);
-				vtx.normal.x = (float)v.mData[0];
-				vtx.normal.y = (float)v.mData[1];
-				vtx.normal.z = (float)v.mData[2];
-			}
-			break;
-
-			default:
-				break;
-			}
-		}
-		break;
-
-		case FbxGeometryElement::eByPolygonVertex:
-		{
-			switch (leNormal->GetReferenceMode())
-			{
-			case FbxGeometryElement::eDirect:
-			{
-				FbxVector4 v = leNormal->GetDirectArray().GetAt(vertexCounter);
-				vtx.normal.x = (float)v.mData[0];
-				vtx.normal.y = (float)v.mData[1];
-				vtx.normal.z = (float)v.mData[2];
-			}
-			break;
-
-			case FbxGeometryElement::eIndexToDirect:
-			{
-				int id = leNormal->GetIndexArray().GetAt(vertexCounter);
-				FbxVector4 v = leNormal->GetDirectArray().GetAt(id);
-				vtx.normal.x = (float)v.mData[0];
-				vtx.normal.y = (float)v.mData[1];
-				vtx.normal.z = (float)v.mData[2];
-			}
-			break;
-
-			default:
-				break;
-			}
-		}
-		break;
-		}
+		ProcessAnimation(pNode, bone);
 	}
 
 	void ProcessMesh(FbxNode* pNode)
@@ -269,10 +306,7 @@ namespace FBXHelper
 		{
 			return;
 		}
-		if (pVB != NULL)
-		{
-			return;
-		}
+		FbxModel* meshData = new FbxModel();
 
 		bool allByControlPoint = true;
 
@@ -306,15 +340,15 @@ namespace FBXHelper
 			}
 		}
 
-		nVertexCount = pMesh->GetControlPointsCount();
+		meshData->nVertexCount = pMesh->GetControlPointsCount();
 		if (!allByControlPoint)
 		{
-			nVertexCount = triangleCount * 3;
+			meshData->nVertexCount = triangleCount * 3;
 		}
-		nIndexCount = triangleCount * 3;
+		meshData->nIndexCount = triangleCount * 3;
 
-		pVB = new FbxMeshVertex_Tmp[nVertexCount];
-		pIB = new unsigned int[nIndexCount];
+		meshData->pVB = new FbxMeshVertex_Tmp[meshData->nVertexCount];
+		meshData->pIB = new unsigned int[meshData->nIndexCount];
 
 		const char* uvName = NULL;
 		FbxStringList listUVNames;
@@ -340,10 +374,10 @@ namespace FBXHelper
 			{
 				uvElement = pMesh->GetElementUV(0);
 			}
-			for (int i = 0; i < nVertexCount; ++i)
+			for (int i = 0; i < meshData->nVertexCount; ++i)
 			{
 				currentVertex = controlPoints[i];
-				FbxMeshVertex_Tmp* vertex = &(pVB[i]);
+				FbxMeshVertex_Tmp* vertex = &(meshData->pVB[i]);
 				vertex->pos.x = (float)currentVertex[0];
 				vertex->pos.y = (float)currentVertex[1];
 				vertex->pos.z = (float)currentVertex[2];
@@ -395,13 +429,13 @@ namespace FBXHelper
 
 				if (allByControlPoint)
 				{
-					pIB[polygonIndex * 3 + i] = (unsigned int)controlPointIndex;
+					meshData->pIB[polygonIndex * 3 + i] = (unsigned int)controlPointIndex;
 				}
 				else
 				{
-					pIB[polygonIndex * 3 + i] = static_cast<unsigned int>(vertexIndex);
+					meshData->pIB[polygonIndex * 3 + i] = static_cast<unsigned int>(vertexIndex);
 
-					FbxMeshVertex_Tmp* vertex = &(pVB[vertexIndex]);
+					FbxMeshVertex_Tmp* vertex = &(meshData->pVB[vertexIndex]);
 					currentVertex = controlPoints[controlPointIndex];
 					vertex->pos.x = (float)currentVertex[0];
 					vertex->pos.y = (float)currentVertex[1];
@@ -437,9 +471,10 @@ namespace FBXHelper
 				++vertexIndex;
 			}
 		}
+		pMeshList->mMeshes.Add(meshData);
 	}
 
-	void ProcessNode(FbxNode* pNode)
+	void ProcessNode(FbxNode* pNode, FbxNode* pParent)
 	{
 		FbxNodeAttribute* attributeType = pNode->GetNodeAttribute();
 		if (attributeType)
@@ -449,22 +484,31 @@ namespace FBXHelper
 			case FbxNodeAttribute::eMesh:
 				ProcessMesh(pNode);
 				break;
+			case FbxNodeAttribute::eSkeleton:
+				ProcessSkeleton(pNode, pParent);
+				break;
+			default:
+				break;
 			}
 		}
 		for (int i = 0; i < pNode->GetChildCount(); ++i)
 		{
-			ProcessNode(pNode->GetChild(i));
+			ProcessNode(pNode->GetChild(i), pNode);
 		}
 	}
 
 	void GetMesh(void** ppVB, int& v_stride, int& v_count, void** ppIB, int& i_stride, int& i_count)
 	{
-		(*ppVB) = pVB;
+		if (!pMeshList) return;
+		if (pMeshList->mMeshes.Count() == 0)
+			return;
+		FbxModel* mesh = pMeshList->mMeshes[0];
+		(*ppVB) = mesh->pVB;
 		v_stride = sizeof(FbxMeshVertex_Tmp);
-		v_count = nVertexCount;
-		(*ppIB) = pIB;
+		v_count = mesh->nVertexCount;
+		(*ppIB) = mesh->pIB;
 		i_stride = sizeof(unsigned int);
-		i_count = nIndexCount;
+		i_count = mesh->nIndexCount;
 	}
 
 	bool EndFBXHelper()
@@ -474,18 +518,16 @@ namespace FBXHelper
 		pFBXSDKManager = NULL;
 		pFBXScene = NULL;
 
-		if (pVB)
+		if (pMeshList)
 		{
-			delete[] pVB;
-			pVB = NULL;
+			delete pMeshList;
+			pMeshList = NULL;
 		}
-		if (pIB)
+		if (pSkeleton)
 		{
-			delete[] pIB;
-			pIB = NULL;
+			delete pSkeleton;
+			pSkeleton = NULL;
 		}
-		nVertexCount = 0;
-		nIndexCount = 0;
 
 		return true;
 	}

@@ -1,4 +1,5 @@
 #include "Test.h"
+#include <stdio.h>
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 //º¯Êý¿ªÊ¼;
@@ -11,6 +12,9 @@ D3DDEVTYPE deviceType = D3DDEVTYPE_HAL;
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	LPSTR lpCmdLine, int nCmdShow)
 {
+	AllocConsole();
+	
+	freopen("conout$", "w", stdout);
 	Test test;
 
 	WNDCLASS wc = { 0 };
@@ -147,7 +151,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 			lastTime = curTime;
 		}
 	}
+	test.OnQuit();
 	UnregisterClass("Direct3D9App", wc.hInstance);
+	FreeConsole();
 	return 0;
 }
 

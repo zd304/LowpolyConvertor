@@ -24,6 +24,8 @@ public:
 	void OnInit(HWND hwnd, IDirect3DDevice9* device);
 
 	void OnUpdate();
+
+	void OnQuit();
 public:
 	IDirect3DDevice9* mDevice;
 	HWND mHwnd;

@@ -17,6 +17,7 @@
 *.smod
 *.sdf
 *.opensdf
+*.suo
 
 # Compiled Static libraries
 *.lai

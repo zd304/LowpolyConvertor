@@ -151,7 +151,7 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 	device->SetMaterial(&material);
 	rot = 0.0f;
 	
-	CustomVertex* vs = NULL;
+	/*CustomVertex* vs = NULL;
 	mMesh->LockVertexBuffer(0, (void**)&vs);
 	Collapse::BeginCollapse(vs, sizeof(CustomVertex), v_count, 0,
 		pib, sizeof(unsigned int), i_count);
@@ -181,9 +181,7 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 	memcpy(ib, buffer->indices, buffer->i_count * buffer->i_stride);
 	mMesh->UnlockIndexBuffer();
 
-	Collapse::EndCollapse();
-
-	FBXHelper::EndFBXHelper();
+	Collapse::EndCollapse();*/
 }
 
 void Test::OnUpdate()
@@ -196,4 +194,9 @@ void Test::OnUpdate()
 	mDevice->SetFVF(fvf);
 
 	mMesh->DrawSubset(0);
+}
+
+void Test::OnQuit()
+{
+	FBXHelper::EndFBXHelper();
 }
