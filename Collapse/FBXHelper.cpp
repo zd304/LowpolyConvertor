@@ -101,15 +101,17 @@ namespace FBXHelper
 		FbxAnimCurve* scaleX = NULL;
 		FbxAnimCurve* scaleY = NULL;
 		FbxAnimCurve* scaleZ = NULL;
+		FbxNode* node = NULL;
 	};
 
 	D3DXMATRIX ToD3DMatrix(const FbxAMatrix& mat)
 	{
-		return D3DXMATRIX(
+		D3DXMATRIX mm = D3DXMATRIX(
 			(float)mat.Get(0, 0), (float)mat.Get(0, 1), (float)mat.Get(0, 2), (float)mat.Get(0, 3),
 			(float)mat.Get(1, 0), (float)mat.Get(1, 1), (float)mat.Get(1, 2), (float)mat.Get(1, 3),
 			(float)mat.Get(2, 0), (float)mat.Get(2, 1), (float)mat.Get(2, 2), (float)mat.Get(2, 3),
 			(float)mat.Get(3, 0), (float)mat.Get(3, 1), (float)mat.Get(3, 2), (float)mat.Get(3, 3));
+		return mm;
 	}
 
 	D3DXMATRIX FbxAnimationEvaluator::matIdentity = D3DXMATRIX(
@@ -149,6 +151,8 @@ namespace FBXHelper
 		FbxTime t;
 		t.SetSecondDouble((double)second);
 
+//#define __LOCAL_EVALUATE__
+#ifdef __LOCAL_EVALUATE__
 		FbxVector4 translation(0.0, 0.0, 0.0);
 		FbxVector4 rotation(0.0, 0.0, 0.0);
 		FbxVector4 scaling(1.0f, 1.0, 1.0, 1.0);
@@ -158,10 +162,13 @@ namespace FBXHelper
 		if (lclCurve->rotationX) rotation.mData[0] = lclCurve->rotationX->Evaluate(t);
 		if (lclCurve->rotationY) rotation.mData[1] = lclCurve->rotationY->Evaluate(t);
 		if (lclCurve->rotationZ) rotation.mData[2] = lclCurve->rotationZ->Evaluate(t);
-		if (lclCurve->scaleX) scaling.mData[0] = lclCurve->scaleX->Evaluate(t);
-		if (lclCurve->scaleY) scaling.mData[1] = lclCurve->scaleY->Evaluate(t);
-		if (lclCurve->scaleZ) scaling.mData[2] = lclCurve->scaleZ->Evaluate(t);
+		//if (lclCurve->scaleX) scaling.mData[0] = lclCurve->scaleX->Evaluate(t);
+		//if (lclCurve->scaleY) scaling.mData[1] = lclCurve->scaleY->Evaluate(t);
+		//if (lclCurve->scaleZ) scaling.mData[2] = lclCurve->scaleZ->Evaluate(t);
 		FbxAMatrix mat = FbxAMatrix(translation, rotation, scaling);
+#else
+		FbxAMatrix mat = lclCurve->node->EvaluateGlobalTransform(t);
+#endif
 		return ToD3DMatrix(mat);
 	}
 
@@ -238,6 +245,7 @@ namespace FBXHelper
 		if (skinCount == 0)
 			return;
 		skinInfo->weights = new FbxBoneWeight[vtxCount];
+		skinInfo->size = vtxCount;
 		FbxSkin* skinDeformer = (FbxSkin *)pMesh->GetDeformer(0, FbxDeformer::eSkin);
 
 		for (int i = 0; i < skinDeformer->GetClusterCount(); ++i)
@@ -305,6 +313,7 @@ namespace FBXHelper
 				curves->scaleX = pNode->LclScaling.GetCurve(pLayer, FBXSDK_CURVENODE_COMPONENT_X);
 				curves->scaleY = pNode->LclScaling.GetCurve(pLayer, FBXSDK_CURVENODE_COMPONENT_Y);
 				curves->scaleZ = pNode->LclScaling.GetCurve(pLayer, FBXSDK_CURVENODE_COMPONENT_Z);
+				curves->node = pNode;
 				animCurve->animCurves[animName] = curves;
 			}
 		}
@@ -553,6 +562,21 @@ namespace FBXHelper
 		i_count = mesh->nIndexCount;
 	}
 
+	FbxAnimationEvaluator* GetAnimationEvaluator()
+	{
+		return pAnimEvaluator;
+	}
+
+	FbxBoneMap* GetBoneMap()
+	{
+		return pSkeleton;
+	}
+
+	FbxModelList* GetModelList()
+	{
+		return pMeshList;
+	}
+
 	bool EndFBXHelper()
 	{
 		bool rst = true;
@@ -569,6 +593,11 @@ namespace FBXHelper
 		{
 			delete pSkeleton;
 			pSkeleton = NULL;
+		}
+		if (pAnimEvaluator)
+		{
+			delete pAnimEvaluator;
+			pAnimEvaluator = NULL;
 		}
 
 		return true;

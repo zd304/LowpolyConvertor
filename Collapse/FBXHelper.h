@@ -35,6 +35,7 @@ namespace FBXHelper
 	struct FbxSkinInfo
 	{
 		FbxBoneWeight* weights = NULL;
+		unsigned int size = 0;
 	};
 
 	class FbxModelList
@@ -52,6 +53,7 @@ namespace FBXHelper
 		unsigned int id;
 		std::string name;
 		D3DXMATRIX bindPose;
+		D3DXMATRIX offset;
 		FbxBone* parent = NULL;
 		std::vector<FbxBone*> children;
 	};
@@ -62,6 +64,7 @@ namespace FBXHelper
 		FbxBoneMap();
 		~FbxBoneMap();
 	public:
+		typedef std::map<std::string, FbxBone*>::iterator IT_BM;
 		std::map<std::string, FbxBone*> mBones;
 	};
 
@@ -80,6 +83,12 @@ namespace FBXHelper
 	bool BeginFBXHelper(const char* fileName);
 
 	void GetMesh(void** ppVB, int& v_stride, int& v_count, void** ppIB, int& i_stride, int& i_count);
+
+	FbxAnimationEvaluator* GetAnimationEvaluator();
+
+	FbxBoneMap* GetBoneMap();
+
+	FbxModelList* GetModelList();
 
 	bool EndFBXHelper();
 }

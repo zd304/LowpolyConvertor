@@ -1,16 +1,32 @@
 #include "Test.h"
 #include "Collapse.h"
-#include "FBXHelper.h"
 #include <fstream>
 
-Test::Test()
+FocuseBoneSkin::FocuseBoneSkin()
 {
 
 }
 
+FocuseBoneSkin::~FocuseBoneSkin()
+{
+	for (IT_FBS it = skins.begin(); it != skins.end(); ++it)
+	{
+		FocusBoneWeight* fbw = it->second;
+		if (!fbw) continue;
+		delete fbw;
+	}
+	skins.clear();
+}
+
+Test::Test()
+{
+	mLastTime = 0;
+	mAnimTime = 0.0f;
+}
+
 Test::~Test()
 {
-
+	mLastTime = 0;
 }
 
 void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
@@ -18,91 +34,11 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 	mDevice = device;
 	mHwnd = hwnd;
 
-	/*std::ifstream file;
-	file.open("bunny_vb.txt", std::ios::binary);
-	const int LINE_LENGTH = 512;
-	char line[LINE_LENGTH];
-	memset(line, 0, LINE_LENGTH);
-	while (file.getline(line, LINE_LENGTH))
-	{
-		std::string sLine = line;
-		memset(line, 0, LINE_LENGTH);
-
-		float v[3];
-		int index = 0;
-		bool ns = false;
-
-		std::string element;
-		for (size_t i = 0; i < sLine.size(); ++i)
-		{
-			char c = sLine[i];
-			if (c != ' ' && c != '\t' && c != '\n' && c != '\r' && c != ',')
-			{
-				element += c;
-				ns = true;
-			}
-			else
-			{
-				if (!ns) continue;
-				ns = false;
-				float e = (float)atof(element.c_str());
-				element.clear();
-				v[index++] = e;
-				if (index >= 3)
-					break;
-			}
-		}
-		D3DXVECTOR3 vec(v);
-		CustomVertex vertex;
-		vertex.pos = v;
-		vertex.color = 0xff00ff00;
-		mVertices.push_back(vertex);
-	}
-	file.close();
-
-	std::vector<unsigned int> ids;
-	file.open("bunny_ib.txt", std::ios::binary);
-	memset(line, 0, LINE_LENGTH);
-	while (file.getline(line, LINE_LENGTH))
-	{
-		std::string sLine = line;
-		memset(line, 0, LINE_LENGTH);
-
-		int v[3];
-		int index = 0;
-		bool ns = false;
-
-		std::string element;
-		for (size_t i = 0; i < sLine.size(); ++i)
-		{
-			char c = sLine[i];
-			if (c != ' ' && c != '\t' && c != '\n' && c != '\r' && c != ',')
-			{
-				element += c;
-				ns = true;
-			}
-			else
-			{
-				if (!ns) continue;
-				ns = false;
-				int e = atoi(element.c_str());
-				element.clear();
-				v[index++] = e;
-				if (index >= 3)
-					break;
-			}
-		}
-		ids.push_back((unsigned int)v[0]);
-		ids.push_back((unsigned int)v[1]);
-		ids.push_back((unsigned int)v[2]);
-	}
-	file.close();*/
+	mLastTime = timeGetTime();
+	mAnimTime = 0.0f;
 
 	FBXHelper::BeginFBXHelper("humanoid.fbx");
 
-	CustomVertex* pvb = NULL;
-	int v_stride = 0;
-	int v_count = 0;
 	unsigned int* pib = NULL;
 	int i_stride = 0;
 	int i_count = 0;
@@ -126,12 +62,10 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 	memcpy(indices, pib, i_stride * i_count);
 	mMesh->UnlockVertexBuffer();
 
-	D3DXComputeNormals(mMesh, 0);
-
 	D3DXMATRIX matView, matProj;
 	D3DXMatrixPerspectiveFovLH(&matProj, D3DX_PI / 4.0f, 800.0f / 600.0f, 0.1f, 1000.0f);
-	D3DXMatrixLookAtLH(&matView, &D3DXVECTOR3(0.0f, 200.0f, -200.0f),
-		&D3DXVECTOR3(0.0f, 0.0f, 200.0f), &D3DXVECTOR3(0.0f, 1.0f, 0.0f));
+	D3DXMatrixLookAtLH(&matView, &D3DXVECTOR3(0.0f, 400.0f, -400.0f),
+		&D3DXVECTOR3(0.0f, 0.0f, 400.0f), &D3DXVECTOR3(0.0f, 1.0f, 0.0f));
 	D3DXMatrixTranslation(&mMatWorld, 0.0f, -0.1f, 0.0f);
 
 	device->SetTransform(D3DTS_PROJECTION, &matProj);
@@ -182,21 +116,109 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 	mMesh->UnlockIndexBuffer();
 
 	Collapse::EndCollapse();*/
+
+	mSkin = new FocuseBoneSkin();
+	FBXHelper::FbxModelList* modelList = FBXHelper::GetModelList();
+	if (modelList && modelList->mSkins.Count() > 0)
+	{
+		FBXHelper::FbxBoneMap* bonemap = FBXHelper::GetBoneMap();
+		FBXHelper::FbxSkinInfo* skin = modelList->mSkins[0];
+		for (unsigned int i = 0; i < skin->size; ++i)
+		{
+			FBXHelper::FbxBoneWeight* bw = &skin->weights[i];
+			for (int j = 0; j < bw->boneName.Count(); ++j)
+			{
+				std::string& sName = bw->boneName[j];
+				FBXHelper::FbxBoneMap::IT_BM itbm = bonemap->mBones.find(sName);
+				if (itbm == bonemap->mBones.end())
+				{
+					continue;
+				}
+				FocuseBoneSkin::IT_FBS itfbs = mSkin->skins.find(itbm->second);
+				if (itfbs == mSkin->skins.end())
+				{
+					mSkin->skins[itbm->second] = new FocusBoneWeight();
+				}
+				FocusBoneWeight* fbw = mSkin->skins[itbm->second];
+				fbw->index.Add(i);
+				fbw->weight.Add(bw->weight[j]);
+			}
+		}
+	}
 }
 
 void Test::OnUpdate()
 {
-	D3DXMATRIX matRot;
-	D3DXMatrixRotationY(&matRot, 0.0001f);
-	D3DXMatrixMultiply(&mMatWorld, &mMatWorld, &matRot);
+	DWORD curTime = timeGetTime();
+	DWORD timeDelta = curTime - mLastTime;
+
+	//D3DXMATRIX matRot;
+	//D3DXMatrixRotationY(&matRot, 0.0001f);
+	//D3DXMatrixMultiply(&mMatWorld, &mMatWorld, &matRot);
 	mDevice->SetTransform(D3DTS_WORLD, &mMatWorld);
+
+	CustomVertex* vertices = NULL;
+	mMesh->LockVertexBuffer(0, (void**)&vertices);
+
+	for (int i = 0; i < v_count; ++i)
+	{
+		vertices[i].pos = pvb[i].pos;
+	}
+
+	FBXHelper::FbxBoneMap* bonemap = FBXHelper::GetBoneMap();
+	FBXHelper::FbxAnimationEvaluator* animEvaluator = FBXHelper::GetAnimationEvaluator();
+	if (bonemap && animEvaluator)
+	{
+		float dt = (float)timeDelta * 0.001f;
+		mAnimTime += dt;
+		if (mAnimTime > 3.0f)
+			mAnimTime = 0.0f;
+		FBXHelper::FbxBoneMap::IT_BM it;
+		for (it = bonemap->mBones.begin(); it != bonemap->mBones.end(); ++it)
+		{
+			FBXHelper::FbxBone* bone = it->second;
+			bone->offset = animEvaluator->Evaluator(bone, "shot", mAnimTime);
+			//if (bone->parent)
+			//{
+			//	D3DXMatrixMultiply(&bone->offset, &bone->parent->offset, &bone->offset);
+			//}
+			FocusBoneWeight* fbw = mSkin->skins[bone];
+			if (!fbw) continue;
+
+			D3DXMATRIX mat;
+			D3DXMatrixInverse(&mat, NULL, &bone->bindPose);
+			D3DXMatrixMultiply(&mat, &bone->offset, &mat);
+
+			for (int i = 0; i < fbw->index.Count(); ++i)
+			{
+				int idx = fbw->index[i];
+				double weight = fbw->weight[i];
+				CustomVertex& cv = vertices[idx];
+				D3DXVECTOR4 vec;
+				D3DXVec3Transform(&vec, &cv.pos, &mat);
+				vec = vec * (float)weight;
+				cv.pos.x += vec.x;
+				cv.pos.y += vec.y;
+				cv.pos.z += vec.z;
+			}
+		}
+	}
+
+	mMesh->UnlockVertexBuffer();
 
 	mDevice->SetFVF(fvf);
 
 	mMesh->DrawSubset(0);
+
+	mLastTime = curTime;
 }
 
 void Test::OnQuit()
 {
+	if (mSkin)
+	{
+		delete mSkin;
+		mSkin = NULL;
+	}
 	FBXHelper::EndFBXHelper();
 }
