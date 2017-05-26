@@ -38,6 +38,29 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 	mAnimTime = 0.0f;
 
 	FBXHelper::BeginFBXHelper("humanoid.fbx");
+	
+	FbxAMatrix mat;
+	mat.SetIdentity();
+	FbxVector4 axis(1.0, 1.0, 1.0);
+	axis.Normalize();
+	FbxQuaternion q(axis, 45);
+	mat.SetQ(q);
+	printf("FbxAMatrxi:\n%f, %f, %f, %f\n%f, %f, %f, %f\n%f, %f, %f, %f\n%f, %f, %f, %f\n",
+		(float)mat.Get(0, 0), (float)mat.Get(0, 1), (float)mat.Get(0, 2), (float)mat.Get(0, 3),
+		(float)mat.Get(1, 0), (float)mat.Get(1, 1), (float)mat.Get(1, 2), (float)mat.Get(1, 3),
+		(float)mat.Get(2, 0), (float)mat.Get(2, 1), (float)mat.Get(2, 2), (float)mat.Get(2, 3),
+		(float)mat.Get(3, 0), (float)mat.Get(3, 1), (float)mat.Get(3, 2), (float)mat.Get(3, 3));
+	D3DXMATRIX d3dmat;
+	D3DXQUATERNION d3dQ;
+	D3DXVECTOR3 d3daxis(1.0f, 1.0f, 1.0f);
+	D3DXVec3Normalize(&d3daxis, &d3daxis);
+	D3DXQuaternionRotationAxis(&d3dQ, &d3daxis, 0.78539816325f);
+	D3DXMatrixRotationQuaternion(&d3dmat, &d3dQ);
+	printf("D3DXMATRIX:\n%f, %f, %f, %f\n%f, %f, %f, %f\n%f, %f, %f, %f\n%f, %f, %f, %f\n",
+		d3dmat(0, 0), d3dmat(0, 1), d3dmat(0, 2), d3dmat(0, 3),
+		d3dmat(1, 0), d3dmat(1, 1), d3dmat(1, 2), d3dmat(1, 3),
+		d3dmat(2, 0), d3dmat(2, 1), d3dmat(2, 2), d3dmat(2, 3),
+		d3dmat(3, 0), d3dmat(3, 1), d3dmat(3, 2), d3dmat(3, 3));
 
 	unsigned int* pib = NULL;
 	int i_stride = 0;
@@ -63,16 +86,16 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 	mMesh->UnlockVertexBuffer();
 
 	D3DXMATRIX matView, matProj;
-	D3DXMatrixPerspectiveFovLH(&matProj, D3DX_PI / 4.0f, 800.0f / 600.0f, 0.1f, 1000.0f);
-	D3DXMatrixLookAtLH(&matView, &D3DXVECTOR3(0.0f, 400.0f, -400.0f),
-		&D3DXVECTOR3(0.0f, 0.0f, 400.0f), &D3DXVECTOR3(0.0f, 1.0f, 0.0f));
+	D3DXMatrixPerspectiveFovLH(&matProj, D3DX_PI / 4.0f, 800.0f / 600.0f, 0.1f, 10000.0f);
+	D3DXMatrixLookAtLH(&matView, &D3DXVECTOR3(0.0f, 900.0f, -900.0f),
+		&D3DXVECTOR3(0.0f, -400.0f, 900.0f), &D3DXVECTOR3(0.0f, 1.0f, 0.0f));
 	D3DXMatrixTranslation(&mMatWorld, 0.0f, -0.1f, 0.0f);
 
 	device->SetTransform(D3DTS_PROJECTION, &matProj);
 	device->SetTransform(D3DTS_VIEW, &matView);
 	device->SetTransform(D3DTS_WORLD, &mMatWorld);
 	device->SetRenderState(D3DRS_LIGHTING, TRUE);
-	//device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+	device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
 	D3DLIGHT9 light;
 	light.Ambient = D3DXCOLOR(0.7f, 0.7f, 0.7f, 1.0f);
 	light.Diffuse = D3DXCOLOR(0.8f, 0.8f, 0.8f, 1.0f);
@@ -119,9 +142,9 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 
 	mSkin = new FocuseBoneSkin();
 	FBXHelper::FbxModelList* modelList = FBXHelper::GetModelList();
+	FBXHelper::FbxBoneMap* bonemap = FBXHelper::GetBoneMap();
 	if (modelList && modelList->mSkins.Count() > 0)
 	{
-		FBXHelper::FbxBoneMap* bonemap = FBXHelper::GetBoneMap();
 		FBXHelper::FbxSkinInfo* skin = modelList->mSkins[0];
 		for (unsigned int i = 0; i < skin->size; ++i)
 		{
@@ -145,6 +168,77 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 			}
 		}
 	}
+
+	std::vector<CustomVertex> sk_vb;
+	std::vector<unsigned int> sk_ib;
+	int triIndex = 0;
+	for (int i = 0; i < bonemap->mBoneList.Count(); ++i)
+	{
+		FBXHelper::FbxBone* bone = bonemap->mBoneList[i];
+		if (!bone->parent)
+		{
+			continue;
+		}
+		D3DXVECTOR3 start(bone->parent->bindPose._41, bone->parent->bindPose._42, bone->parent->bindPose._43);
+		D3DXVECTOR3 end(bone->bindPose._41, bone->bindPose._42, bone->bindPose._43);
+		printf("%d. [%s](%.4f, %.4f, %.4f)-----(%.4f, %.4f, %.4f)\n", i, bone->name.c_str(), start.x, start.y, start.z, end.x, end.y, end.z);
+		D3DXVECTOR3 subRight(bone->parent->bindPose._31, bone->parent->bindPose._32, bone->parent->bindPose._33);
+		D3DXVec3Normalize(&subRight, &subRight);
+
+		D3DXVECTOR3 daxis = end - start;
+		D3DXVECTOR3 naxis;
+		D3DXVec3Normalize(&naxis, &daxis);
+
+		D3DXVECTOR3 subForward;
+		D3DXVec3Cross(&subForward, &subRight, &naxis);
+		D3DXVec3Normalize(&subForward, &subForward);
+		D3DXVec3Cross(&subRight, &naxis, &subForward);
+		D3DXVec3Normalize(&subRight, &subRight);
+
+		float thick = 2.0f;// D3DXVec3Length(&daxis) * 0.1f;
+
+		CustomVertex cvt{ end, D3DXVECTOR3(0.0f, 1.0f, 0.0f), 0xffffffff, D3DXVECTOR2() };
+		sk_vb.push_back(cvt);
+		CustomVertex cv1{ start + thick * subRight, D3DXVECTOR3(0.0f, 1.0f, 0.0f), 0xffffffff, D3DXVECTOR2() };
+		sk_vb.push_back(cv1);
+		CustomVertex cv2{ start - thick * subRight, D3DXVECTOR3(0.0f, 1.0f, 0.0f), 0xffffffff, D3DXVECTOR2() };
+		sk_vb.push_back(cv2);
+		CustomVertex cv3{ start + thick * subForward, D3DXVECTOR3(0.0f, 1.0f, 0.0f), 0xffffffff, D3DXVECTOR2() };
+		sk_vb.push_back(cv3);
+		CustomVertex cv4{ start - thick * subForward, D3DXVECTOR3(0.0f, 1.0f, 0.0f), 0xffffffff, D3DXVECTOR2() };
+		sk_vb.push_back(cv4);
+
+		sk_ib.push_back(0 + triIndex);
+		sk_ib.push_back(1 + triIndex);
+		sk_ib.push_back(2 + triIndex);
+		sk_ib.push_back(0 + triIndex);
+		sk_ib.push_back(2 + triIndex);
+		sk_ib.push_back(3 + triIndex);
+		sk_ib.push_back(0 + triIndex);
+		sk_ib.push_back(3 + triIndex);
+		sk_ib.push_back(4 + triIndex);
+		sk_ib.push_back(0 + triIndex);
+		sk_ib.push_back(4 + triIndex);
+		sk_ib.push_back(1 + triIndex);
+		sk_ib.push_back(1 + triIndex);
+		sk_ib.push_back(2 + triIndex);
+		sk_ib.push_back(3 + triIndex);
+		sk_ib.push_back(2 + triIndex);
+		sk_ib.push_back(1 + triIndex);
+		sk_ib.push_back(4 + triIndex);
+
+		triIndex += 5;
+	}
+	D3DXCreateMeshFVF(sk_ib.size() / 3, sk_vb.size(), D3DXMESH_32BIT, fvf, device, &mSkeletonMesh);
+	vertices = NULL;
+	mSkeletonMesh->LockVertexBuffer(0, (void**)&vertices);
+	memcpy(vertices, &(sk_vb[0]), sizeof(CustomVertex) * sk_vb.size());
+	mSkeletonMesh->UnlockVertexBuffer();
+
+	indices = NULL;
+	mSkeletonMesh->LockIndexBuffer(0, (void**)&indices);
+	memcpy(indices, &(sk_ib[0]), sizeof(unsigned int) * sk_ib.size());
+	mSkeletonMesh->UnlockVertexBuffer();
 }
 
 void Test::OnUpdate()
@@ -152,12 +246,12 @@ void Test::OnUpdate()
 	DWORD curTime = timeGetTime();
 	DWORD timeDelta = curTime - mLastTime;
 
-	//D3DXMATRIX matRot;
-	//D3DXMatrixRotationY(&matRot, 0.0001f);
-	//D3DXMatrixMultiply(&mMatWorld, &mMatWorld, &matRot);
+	D3DXMATRIX matRot;
+	D3DXMatrixRotationY(&matRot, 0.00001f);
+	D3DXMatrixMultiply(&mMatWorld, &mMatWorld, &matRot);
 	mDevice->SetTransform(D3DTS_WORLD, &mMatWorld);
 
-	CustomVertex* vertices = NULL;
+	/*CustomVertex* vertices = NULL;
 	mMesh->LockVertexBuffer(0, (void**)&vertices);
 
 	for (int i = 0; i < v_count; ++i)
@@ -173,21 +267,20 @@ void Test::OnUpdate()
 		mAnimTime += dt;
 		if (mAnimTime > 3.0f)
 			mAnimTime = 0.0f;
-		FBXHelper::FbxBoneMap::IT_BM it;
-		for (it = bonemap->mBones.begin(); it != bonemap->mBones.end(); ++it)
+		for (int i = 0; i < bonemap->mBoneList.Count(); ++i)
 		{
-			FBXHelper::FbxBone* bone = it->second;
+			FBXHelper::FbxBone* bone = bonemap->mBoneList[i];
 			bone->offset = animEvaluator->Evaluator(bone, "shot", mAnimTime);
 			//if (bone->parent)
 			//{
-			//	D3DXMatrixMultiply(&bone->offset, &bone->parent->offset, &bone->offset);
+			//	D3DXMatrixMultiply(&bone->offset, &bone->offset, &bone->parent->offset);
 			//}
 			FocusBoneWeight* fbw = mSkin->skins[bone];
 			if (!fbw) continue;
 
 			D3DXMATRIX mat;
 			D3DXMatrixInverse(&mat, NULL, &bone->bindPose);
-			D3DXMatrixMultiply(&mat, &bone->offset, &mat);
+			D3DXMatrixMultiply(&mat, &mat, &bone->offset);
 
 			for (int i = 0; i < fbw->index.Count(); ++i)
 			{
@@ -204,11 +297,12 @@ void Test::OnUpdate()
 		}
 	}
 
-	mMesh->UnlockVertexBuffer();
+	mMesh->UnlockVertexBuffer();*/
 
 	mDevice->SetFVF(fvf);
 
 	mMesh->DrawSubset(0);
+	mSkeletonMesh->DrawSubset(0);
 
 	mLastTime = curTime;
 }

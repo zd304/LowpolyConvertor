@@ -61,6 +61,8 @@ public:
 	
 	float mAnimTime;
 	FocuseBoneSkin* mSkin;
+
+	ID3DXMesh* mSkeletonMesh;
 };
 
 #endif

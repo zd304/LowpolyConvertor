@@ -66,6 +66,7 @@ namespace FBXHelper
 	public:
 		typedef std::map<std::string, FbxBone*>::iterator IT_BM;
 		std::map<std::string, FbxBone*> mBones;
+		List<FbxBone*> mBoneList;
 	};
 
 	class FbxAnimationEvaluator
@@ -89,6 +90,7 @@ namespace FBXHelper
 	FbxBoneMap* GetBoneMap();
 
 	FbxModelList* GetModelList();
+	D3DXMATRIX ToD3DMatrix(const FbxAMatrix& mat);
 
 	bool EndFBXHelper();
 }

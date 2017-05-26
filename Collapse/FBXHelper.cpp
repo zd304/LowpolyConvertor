@@ -65,6 +65,7 @@ namespace FBXHelper
 			delete bone;
 		}
 		mBones.clear();
+		mBoneList.Clear();
 	}
 
 	class AnimationCurve;
@@ -106,11 +107,32 @@ namespace FBXHelper
 
 	D3DXMATRIX ToD3DMatrix(const FbxAMatrix& mat)
 	{
-		D3DXMATRIX mm = D3DXMATRIX(
-			(float)mat.Get(0, 0), (float)mat.Get(0, 1), (float)mat.Get(0, 2), (float)mat.Get(0, 3),
-			(float)mat.Get(1, 0), (float)mat.Get(1, 1), (float)mat.Get(1, 2), (float)mat.Get(1, 3),
-			(float)mat.Get(2, 0), (float)mat.Get(2, 1), (float)mat.Get(2, 2), (float)mat.Get(2, 3),
-			(float)mat.Get(3, 0), (float)mat.Get(3, 1), (float)mat.Get(3, 2), (float)mat.Get(3, 3));
+		D3DXMATRIX mm;
+			//= D3DXMATRIX(
+			//(float)mat.Get(0, 0), (float)mat.Get(0, 1), (float)mat.Get(0, 2), (float)mat.Get(0, 3),
+			//(float)mat.Get(1, 0), (float)mat.Get(1, 1), (float)mat.Get(1, 2), (float)mat.Get(1, 3),
+			//(float)mat.Get(2, 0), (float)mat.Get(2, 1), (float)mat.Get(2, 2), (float)mat.Get(2, 3),
+			//(float)mat.Get(3, 0), (float)mat.Get(3, 1), (float)mat.Get(3, 2), (float)mat.Get(3, 3));
+		for (int i = 0; i < 4; ++i)
+		{
+			for (int j = 0; j < 4; ++j)
+			{
+				mm(i, j) = (float)mat.Get(i, j);
+			}
+		}
+		return mm;
+	}
+
+	FbxAMatrix ToFbxMatrix(const D3DXMATRIX& mat)
+	{
+		FbxAMatrix mm;
+		for (int i = 0; i < 4; ++i)
+		{
+			for (int j = 0; j < 4; ++j)
+			{
+				mm.mData[i][j] = (float)mat(i, j);
+			}
+		}
 		return mm;
 	}
 
@@ -159,9 +181,9 @@ namespace FBXHelper
 		if (lclCurve->translationX) translation.mData[0] = lclCurve->translationX->Evaluate(t);
 		if (lclCurve->translationY) translation.mData[1] = lclCurve->translationY->Evaluate(t);
 		if (lclCurve->translationZ) translation.mData[2] = lclCurve->translationZ->Evaluate(t);
-		if (lclCurve->rotationX) rotation.mData[0] = lclCurve->rotationX->Evaluate(t);
-		if (lclCurve->rotationY) rotation.mData[1] = lclCurve->rotationY->Evaluate(t);
-		if (lclCurve->rotationZ) rotation.mData[2] = lclCurve->rotationZ->Evaluate(t);
+		//if (lclCurve->rotationX) rotation.mData[0] = lclCurve->rotationX->Evaluate(t);
+		//if (lclCurve->rotationY) rotation.mData[1] = lclCurve->rotationY->Evaluate(t);
+		//if (lclCurve->rotationZ) rotation.mData[2] = lclCurve->rotationZ->Evaluate(t);
 		//if (lclCurve->scaleX) scaling.mData[0] = lclCurve->scaleX->Evaluate(t);
 		//if (lclCurve->scaleY) scaling.mData[1] = lclCurve->scaleY->Evaluate(t);
 		//if (lclCurve->scaleZ) scaling.mData[2] = lclCurve->scaleZ->Evaluate(t);
@@ -224,6 +246,18 @@ namespace FBXHelper
 			return false;
 		}
 
+		FbxAxisSystem::DirectX.ConvertScene(pFBXScene);
+		FbxAxisSystem fbxAxisSystem = pFBXScene->GetGlobalSettings().GetAxisSystem();
+		FbxAxisSystem::ECoordSystem coordSystem = fbxAxisSystem.GetCoorSystem();
+		if (coordSystem == FbxAxisSystem::ECoordSystem::eLeftHanded)
+		{
+			printf("Left-Hand!\n");
+		}
+		else
+		{
+			printf("Right-Hand!\n");
+		}
+
 		pMeshList = new FbxModelList();
 
 		int numStacks = pFBXScene->GetSrcObjectCount<fbxsdk_2015_1::FbxAnimStack>();
@@ -241,28 +275,62 @@ namespace FBXHelper
 	{
 		FbxSkinInfo* skinInfo = new FbxSkinInfo();
 		pMeshList->mSkins.Add(skinInfo);
+		// スキンの数を取得;
 		int skinCount = pMesh->GetDeformerCount(FbxDeformer::eSkin);
 		if (skinCount == 0)
 			return;
 		skinInfo->weights = new FbxBoneWeight[vtxCount];
 		skinInfo->size = vtxCount;
-		FbxSkin* skinDeformer = (FbxSkin *)pMesh->GetDeformer(0, FbxDeformer::eSkin);
-
-		for (int i = 0; i < skinDeformer->GetClusterCount(); ++i)
+		for (int s = 0; s < skinCount; ++s)
 		{
-			FbxCluster* cluster = skinDeformer->GetCluster(i);
-			FbxNode* link = cluster->GetLink();
-			if (!link) continue;
-			const char* boneName = link->GetName();
-			int* indices = cluster->GetControlPointIndices();
-			double* weights = cluster->GetControlPointWeights();
-			for (int j = 0; j < cluster->GetControlPointIndicesCount(); ++j)
+			// s番目のスキンを取得;
+			FbxSkin* skinDeformer = (FbxSkin*)pMesh->GetDeformer(s, FbxDeformer::eSkin);
+
+			for (int i = 0; i < skinDeformer->GetClusterCount(); ++i)
 			{
-				int vtxIndex = indices[j];
-				double weight = weights[j];
-				FbxBoneWeight& bw = skinInfo->weights[vtxIndex];
-				bw.boneName.Add(boneName);
-				bw.weight.Add(weight);
+				FbxCluster* cluster = skinDeformer->GetCluster(i);
+				FbxNode* link = cluster->GetLink();
+				if (!link) continue;
+				const char* boneName = link->GetName();
+
+				FbxBoneMap::IT_BM itbm = pSkeleton->mBones.find(boneName);
+				if (itbm != pSkeleton->mBones.end())
+				{
+					FbxBone* bone = itbm->second;
+					FbxAMatrix transformLinkMatrix, transformMatrix, matBindPose;
+
+					// ボーンの初期姿勢を取得;
+					cluster->GetTransformLinkMatrix(transformLinkMatrix);
+
+					//cluster->GetTransformMatrix(transformMatrix);
+					//FbxVector4 vt = pMesh->GetNode()->GetGeometricTranslation(FbxNode::eSourcePivot);
+					//FbxVector4 vr = pMesh->GetNode()->GetGeometricRotation(FbxNode::eSourcePivot);
+					//FbxVector4 vs = pMesh->GetNode()->GetGeometricScaling(FbxNode::eSourcePivot);
+					//FbxAMatrix geometry(vt, vr, vs);
+					//transformMatrix *= geometry;
+
+					if (!transformLinkMatrix.IsRightHand())
+					{
+						printf("llllllll, %s\n", boneName);
+					}
+					matBindPose = transformLinkMatrix;// transformLinkMatrix.Inverse() * transformMatrix;
+					bone->bindPose = ToD3DMatrix(matBindPose);
+				}
+				else
+				{
+					printf("Not Find %s\n", boneName);
+				}
+
+				int* indices = cluster->GetControlPointIndices();
+				double* weights = cluster->GetControlPointWeights();
+				for (int j = 0; j < cluster->GetControlPointIndicesCount(); ++j)
+				{
+					int vtxIndex = indices[j];
+					double weight = weights[j];
+					FbxBoneWeight& bw = skinInfo->weights[vtxIndex];
+					bw.boneName.Add(boneName);
+					bw.weight.Add(weight);
+				}
 			}
 		}
 	}
@@ -336,15 +404,25 @@ namespace FBXHelper
 		FbxBone* bone = new FbxBone();
 		bone->id = pSkeleton->mBones.size();
 		bone->name = pNode->GetName();
+
+		FbxAMatrix matBindPose;// = pNode->EvaluateGlobalTransform();
+		FbxVector4 vt(pNode->LclTranslation.Get());
+		FbxVector4 vr(pNode->LclRotation.Get());
+		FbxVector4 vs(pNode->LclScaling.Get());
+		matBindPose.SetTRS(vt, vr, vs);
+
 		if (parent)
 		{
 			FbxBone* parentBone = pSkeleton->mBones[parent->GetName()];
 			bone->parent = parentBone;
 			parentBone->children.push_back(bone);
+			matBindPose = ToFbxMatrix(parentBone->bindPose) * matBindPose;
 		}
-		FbxAMatrix matBindPose = pNode->EvaluateGlobalTransform();
+
+		matBindPose.SetS(FbxVector4(1, 1, 1, 1));
 		bone->bindPose = ToD3DMatrix(matBindPose);
 		pSkeleton->mBones[bone->name] = bone;
+		pSkeleton->mBoneList.Add(bone);
 
 		ProcessAnimation(pNode, bone);
 	}
