@@ -302,18 +302,18 @@ namespace FBXHelper
 					// ¥Ü©`¥ó¤Î³õÆÚ×Ë„Ý¤òÈ¡µÃ;
 					cluster->GetTransformLinkMatrix(transformLinkMatrix);
 
-					//cluster->GetTransformMatrix(transformMatrix);
-					//FbxVector4 vt = pMesh->GetNode()->GetGeometricTranslation(FbxNode::eSourcePivot);
-					//FbxVector4 vr = pMesh->GetNode()->GetGeometricRotation(FbxNode::eSourcePivot);
-					//FbxVector4 vs = pMesh->GetNode()->GetGeometricScaling(FbxNode::eSourcePivot);
-					//FbxAMatrix geometry(vt, vr, vs);
-					//transformMatrix *= geometry;
+					cluster->GetTransformMatrix(transformMatrix);
+					FbxVector4 vt = pMesh->GetNode()->GetGeometricTranslation(FbxNode::eSourcePivot);
+					FbxVector4 vr = pMesh->GetNode()->GetGeometricRotation(FbxNode::eSourcePivot);
+					FbxVector4 vs = pMesh->GetNode()->GetGeometricScaling(FbxNode::eSourcePivot);
+					FbxAMatrix geometry(vt, vr, vs);
+					transformMatrix *= geometry;
 
 					if (!transformLinkMatrix.IsRightHand())
 					{
 						printf("llllllll, %s\n", boneName);
 					}
-					matBindPose = transformLinkMatrix;// transformLinkMatrix.Inverse() * transformMatrix;
+					matBindPose = transformMatrix.Inverse() * transformLinkMatrix;
 					bone->bindPose = ToD3DMatrix(matBindPose);
 				}
 				else
