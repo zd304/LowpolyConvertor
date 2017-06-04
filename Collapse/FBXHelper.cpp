@@ -191,6 +191,12 @@ namespace FBXHelper
 #else
 		FbxAMatrix mat = lclCurve->node->EvaluateGlobalTransform(t);
 #endif
+		if (bone->meshNode)
+		{
+			FbxNode* mn = bone->meshNode->GetNode();
+			FbxAMatrix matMesh =  mn->EvaluateGlobalTransform(t);
+			mat = matMesh.Inverse() * mat;
+		}
 		return ToD3DMatrix(mat);
 	}
 
@@ -309,10 +315,8 @@ namespace FBXHelper
 					FbxAMatrix geometry(vt, vr, vs);
 					transformMatrix *= geometry;
 
-					if (!transformLinkMatrix.IsRightHand())
-					{
-						printf("llllllll, %s\n", boneName);
-					}
+					bone->meshNode = pMesh;
+
 					matBindPose = transformMatrix.Inverse() * transformLinkMatrix;
 					bone->bindPose = ToD3DMatrix(matBindPose);
 				}
