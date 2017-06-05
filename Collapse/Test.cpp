@@ -87,8 +87,8 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 
 	D3DXMATRIX matView, matProj;
 	D3DXMatrixPerspectiveFovLH(&matProj, D3DX_PI / 4.0f, 800.0f / 600.0f, 0.1f, 10000.0f);
-	D3DXMatrixLookAtLH(&matView, &D3DXVECTOR3(0.0f, 0.0f, -900.0f),
-		&D3DXVECTOR3(0.0f, 0.0f, 900.0f), &D3DXVECTOR3(0.0f, 1.0f, 0.0f));
+	D3DXMatrixLookAtLH(&matView, &D3DXVECTOR3(0.0f, 0.0f, -400.0f),
+		&D3DXVECTOR3(0.0f, 0.0f, 400.0f), &D3DXVECTOR3(0.0f, 1.0f, 0.0f));
 	D3DXMatrixTranslation(&mMatWorld, 0.0f, -0.1f, 0.0f);
 
 	device->SetTransform(D3DTS_PROJECTION, &matProj);
