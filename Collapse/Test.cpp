@@ -87,8 +87,8 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 
 	D3DXMATRIX matView, matProj;
 	D3DXMatrixPerspectiveFovLH(&matProj, D3DX_PI / 4.0f, 800.0f / 600.0f, 0.1f, 10000.0f);
-	D3DXMatrixLookAtLH(&matView, &D3DXVECTOR3(0.0f, 900.0f, -900.0f),
-		&D3DXVECTOR3(0.0f, -400.0f, 900.0f), &D3DXVECTOR3(0.0f, 1.0f, 0.0f));
+	D3DXMatrixLookAtLH(&matView, &D3DXVECTOR3(0.0f, 0.0f, -900.0f),
+		&D3DXVECTOR3(0.0f, 0.0f, 900.0f), &D3DXVECTOR3(0.0f, 1.0f, 0.0f));
 	D3DXMatrixTranslation(&mMatWorld, 0.0f, -0.1f, 0.0f);
 
 	device->SetTransform(D3DTS_PROJECTION, &matProj);
@@ -152,17 +152,12 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 			for (int j = 0; j < bw->boneName.Count(); ++j)
 			{
 				std::string& sName = bw->boneName[j];
-				FBXHelper::FbxBoneMap::IT_BM itbm = bonemap->mBones.find(sName);
-				if (itbm == bonemap->mBones.end())
-				{
-					continue;
-				}
-				FocuseBoneSkin::IT_FBS itfbs = mSkin->skins.find(itbm->second);
+				FocuseBoneSkin::IT_FBS itfbs = mSkin->skins.find(sName);
 				if (itfbs == mSkin->skins.end())
 				{
-					mSkin->skins[itbm->second] = new FocusBoneWeight();
+					mSkin->skins[sName] = new FocusBoneWeight();
 				}
-				FocusBoneWeight* fbw = mSkin->skins[itbm->second];
+				FocusBoneWeight* fbw = mSkin->skins[sName];
 				fbw->index.Add(i);
 				fbw->weight.Add(bw->weight[j]);
 			}
@@ -181,7 +176,6 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 		}
 		D3DXVECTOR3 start(bone->parent->bindPose._41, bone->parent->bindPose._42, bone->parent->bindPose._43);
 		D3DXVECTOR3 end(bone->bindPose._41, bone->bindPose._42, bone->bindPose._43);
-		printf("%d. [%s](%.4f, %.4f, %.4f)-----(%.4f, %.4f, %.4f)\n", i, bone->name.c_str(), start.x, start.y, start.z, end.x, end.y, end.z);
 		D3DXVECTOR3 subRight(bone->parent->bindPose._31, bone->parent->bindPose._32, bone->parent->bindPose._33);
 		D3DXVec3Normalize(&subRight, &subRight);
 
@@ -256,15 +250,15 @@ void Test::OnUpdate()
 	CustomVertex* vertices = NULL;
 	FBXHelper::FbxBoneMap* bonemap = FBXHelper::GetBoneMap();
 
-	bool drawBones = true;
-	bool drawAnimatedBones = true;
-	bool drawMesh = false;
+	bool drawBones = false;
+	bool drawAnimatedBones = false;
+	bool drawMesh = true;
 
 	mMesh->LockVertexBuffer(0, (void**)&vertices);
 
 	for (int i = 0; i < v_count; ++i)
 	{
-		vertices[i].pos = pvb[i].pos;
+		vertices[i].pos = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
 	}
 
 	FBXHelper::FbxAnimationEvaluator* animEvaluator = FBXHelper::GetAnimationEvaluator();
@@ -274,6 +268,9 @@ void Test::OnUpdate()
 		mAnimTime += dt;
 		if (mAnimTime > 3.0f)
 			mAnimTime = 0.0f;
+
+		List<std::string> useNames;
+
 		for (int i = 0; i < bonemap->mBoneList.Count(); ++i)
 		{
 			FBXHelper::FbxBone* bone = bonemap->mBoneList[i];
@@ -282,24 +279,27 @@ void Test::OnUpdate()
 			//{
 			//	D3DXMatrixMultiply(&bone->offset, &bone->parent->offset, &bone->offset);
 			//}
-			FocusBoneWeight* fbw = mSkin->skins[bone];
+			FocusBoneWeight* fbw = mSkin->skins[bone->name];
 			if (!fbw) continue;
+
+			useNames.Add(bone->name);
 
 			D3DXMATRIX mat;
 			D3DXMatrixInverse(&mat, NULL, &bone->bindPose);
 			D3DXMatrixMultiply(&mat, &mat, &bone->offset);
 
-			for (int i = 0; i < fbw->index.Count(); ++i)
+			for (int j = 0; j < fbw->index.Count(); ++j)
 			{
-				int idx = fbw->index[i];
-				double weight = fbw->weight[i];
-				CustomVertex& cv = vertices[idx];
+				int idx = fbw->index[j];
+				double weight = fbw->weight[j];
+				CustomVertex& cv = pvb[idx];
+				
 				D3DXVECTOR4 vec;
 				D3DXVec3Transform(&vec, &cv.pos, &mat);
 				vec = vec * (float)weight;
-				cv.pos.x += vec.x;
-				cv.pos.y += vec.y;
-				cv.pos.z += vec.z;
+				vertices[idx].pos.x += vec.x;
+				vertices[idx].pos.y += vec.y;
+				vertices[idx].pos.z += vec.z;
 			}
 		}
 	}

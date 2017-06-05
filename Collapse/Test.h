@@ -29,8 +29,8 @@ public:
 	FocuseBoneSkin();
 	~FocuseBoneSkin();
 public:
-	typedef std::map<FBXHelper::FbxBone*, FocusBoneWeight*>::iterator IT_FBS;
-	std::map<FBXHelper::FbxBone*, FocusBoneWeight*> skins;
+	typedef std::map<std::string, FocusBoneWeight*>::iterator IT_FBS;
+	std::map<std::string, FocusBoneWeight*> skins;
 };
 
 class Test

@@ -194,7 +194,7 @@ namespace FBXHelper
 		if (bone->meshNode)
 		{
 			FbxNode* mn = bone->meshNode->GetNode();
-			FbxAMatrix matMesh =  mn->EvaluateGlobalTransform(t);
+			FbxAMatrix matMesh = mn->EvaluateGlobalTransform(t);
 			mat = matMesh.Inverse() * mat;
 		}
 		return ToD3DMatrix(mat);
@@ -277,14 +277,14 @@ namespace FBXHelper
 		return rst;
 	}
 
-	void ProcessSkin(FbxMesh* pMesh, int vtxCount)
+	FbxSkinInfo* ProcessSkin(FbxMesh* pMesh, int vtxCount)
 	{
 		FbxSkinInfo* skinInfo = new FbxSkinInfo();
 		pMeshList->mSkins.Add(skinInfo);
 		// スキンの方を函誼;
 		int skinCount = pMesh->GetDeformerCount(FbxDeformer::eSkin);
 		if (skinCount == 0)
-			return;
+			return skinInfo;
 		skinInfo->weights = new FbxBoneWeight[vtxCount];
 		skinInfo->size = vtxCount;
 		for (int s = 0; s < skinCount; ++s)
@@ -337,6 +337,7 @@ namespace FBXHelper
 				}
 			}
 		}
+		return skinInfo;
 	}
 
 	void ProcessAnimation(FbxNode* pNode, FbxBone* bone)
@@ -426,7 +427,7 @@ namespace FBXHelper
 		matBindPose.SetS(FbxVector4(1, 1, 1, 1));
 		bone->bindPose = ToD3DMatrix(matBindPose);
 		pSkeleton->mBones[bone->name] = bone;
-		pSkeleton->mBoneList.Add(bone);
+		pSkeleton->mBoneList.AddUnique(bone);
 
 		ProcessAnimation(pNode, bone);
 	}
@@ -604,7 +605,7 @@ namespace FBXHelper
 			}
 		}
 		pMeshList->mMeshes.Add(meshData);
-		ProcessSkin(pMesh, meshData->nVertexCount);
+		FbxSkinInfo* skinInfo = ProcessSkin(pMesh, meshData->nVertexCount);
 	}
 
 	void ProcessNode(FbxNode* pNode, FbxNode* pParent)
