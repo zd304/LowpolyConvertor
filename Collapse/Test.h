@@ -8,30 +8,7 @@
 #include <string>
 #include "FBXHelper.h"
 
-struct CustomVertex
-{
-	D3DXVECTOR3 pos;
-	D3DXVECTOR3 normal;
-	DWORD color;
-	D3DXVECTOR2 uv;
-};
-
-class FocusBoneWeight
-{
-public:
-	List<int> index;
-	List<double> weight;
-};
-
-class FocuseBoneSkin
-{
-public:
-	FocuseBoneSkin();
-	~FocuseBoneSkin();
-public:
-	typedef std::map<std::string, FocusBoneWeight*>::iterator IT_FBS;
-	std::map<std::string, FocusBoneWeight*> skins;
-};
+class ProgressiveMeshRenderer;
 
 class Test
 {
@@ -47,22 +24,12 @@ public:
 public:
 	IDirect3DDevice9* mDevice;
 	HWND mHwnd;
-	std::vector<CustomVertex> mVertices;
-	ID3DXMesh* mMesh;
-	DWORD fvf;
 	D3DMATERIAL9 material;
 	D3DXMATRIX mMatWorld;
 	float rot;
 	DWORD mLastTime;
 
-	CustomVertex* pvb = NULL;
-	int v_stride = 0;
-	int v_count = 0;
-	
-	float mAnimTime;
-	FocuseBoneSkin* mSkin;
-
-	ID3DXMesh* mSkeletonMesh;
+	ProgressiveMeshRenderer* mMeshRenderer;
 };
 
 #endif

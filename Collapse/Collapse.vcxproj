@@ -72,6 +72,7 @@
     <ClCompile Include="FBXCommon.cpp" />
     <ClCompile Include="FBXHelper.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="ProgressiveMeshRenderer.cpp" />
     <ClCompile Include="Test.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -79,6 +80,7 @@
     <ClInclude Include="FBXCommon.h" />
     <ClInclude Include="FBXHelper.h" />
     <ClInclude Include="list.h" />
+    <ClInclude Include="ProgressiveMeshRenderer.h" />
     <ClInclude Include="Test.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

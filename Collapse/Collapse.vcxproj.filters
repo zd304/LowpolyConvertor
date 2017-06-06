@@ -30,6 +30,9 @@
     <ClCompile Include="FBXCommon.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="ProgressiveMeshRenderer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Test.h">
@@ -45,6 +48,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="FBXCommon.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="ProgressiveMeshRenderer.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

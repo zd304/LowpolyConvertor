@@ -279,12 +279,12 @@ namespace FBXHelper
 
 	FbxSkinInfo* ProcessSkin(FbxMesh* pMesh, int vtxCount)
 	{
+		int skinCount = pMesh->GetDeformerCount(FbxDeformer::eSkin);
+		if (skinCount == 0)
+			return NULL;
 		FbxSkinInfo* skinInfo = new FbxSkinInfo();
 		pMeshList->mSkins.Add(skinInfo);
 		// スキンの方を函誼;
-		int skinCount = pMesh->GetDeformerCount(FbxDeformer::eSkin);
-		if (skinCount == 0)
-			return skinInfo;
 		skinInfo->weights = new FbxBoneWeight[vtxCount];
 		skinInfo->size = vtxCount;
 		for (int s = 0; s < skinCount; ++s)
@@ -424,7 +424,7 @@ namespace FBXHelper
 			matBindPose = ToFbxMatrix(parentBone->bindPose) * matBindPose;
 		}
 
-		matBindPose.SetS(FbxVector4(1, 1, 1, 1));
+		//matBindPose.SetS(FbxVector4(1, 1, 1, 1));
 		bone->bindPose = ToD3DMatrix(matBindPose);
 		pSkeleton->mBones[bone->name] = bone;
 		pSkeleton->mBoneList.AddUnique(bone);
