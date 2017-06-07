@@ -42,7 +42,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 	HWND hwnd = 0;
 	hwnd = CreateWindow("Direct3D9App",
-		"Collapse Test",
+		"Low Poly Convertor",
 		WS_MAXIMIZEBOX,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,

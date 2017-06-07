@@ -16,13 +16,26 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 {
 	mDevice = device;
 	mHwnd = hwnd;
+	RECT rc;
+	::GetClientRect(hwnd, &rc);
+	mWidth = (int)(rc.right - rc.left);
+	mHeight = (int)(rc.bottom - rc.top);
 
 	ImGuiIO& io = ImGui::GetIO();
-	io.Fonts->AddFontFromFileTTF("msyh.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
+	io.Fonts->AddFontFromFileTTF("msyh.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesChinese());
 
 	mLastTime = timeGetTime();
 
 	FBXHelper::BeginFBXHelper("humanoid.fbx");
+	FBXHelper::FbxModelList* models = FBXHelper::GetModelList();
+	mDisireVtxNums.Clear();
+	mMaxDisireVtxNums.Clear();
+	for (int i = 0; i < models->mMeshes.Count(); ++i)
+	{
+		FBXHelper::FbxModel* model = models->mMeshes[i];
+		mDisireVtxNums.Add(model->nVertexCount);
+		mMaxDisireVtxNums.Add(model->nVertexCount);
+	}
 
 	D3DXMATRIX matView, matProj;
 	D3DXMatrixPerspectiveFovLH(&matProj, D3DX_PI / 4.0f, 800.0f / 600.0f, 0.1f, 10000.0f);
@@ -48,16 +61,77 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 	rot = 0.0f;
 
 	mMeshRenderer = new ProgressiveMeshRenderer(mDevice);
-	int ffff[] = {800};
-	mMeshRenderer->Collapse(ffff, 1);
+	mMeshRenderer->Collapse(NULL, 1);
 }
 
 void Test::OnGUI()
 {
-	ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiSetCond_Once);
-	ImGui::SetNextWindowSize(ImVec2(200, 100), ImGuiSetCond_FirstUseEver);
-	ImGui::Begin(STU("Fbx文件信息").c_str());
-	ImGui::Text("Hello");
+	FBXHelper::FbxModelList* models = FBXHelper::GetModelList();
+	mImGuiID = 0;
+	
+	char szTxt[256];
+	std::string infoTxt = "";
+	memset(szTxt, 0, 256);
+	sprintf_s(szTxt, "模型数: %d\n", models->mMeshes.Count());
+	infoTxt += szTxt;
+	for (int i = 0; i < models->mMeshes.Count(); ++i)
+	{
+		FBXHelper::FbxModel* model = models->mMeshes[i];
+		memset(szTxt, 0, 256);
+		sprintf_s(szTxt, "\t模型 [%d]\n", i + 1);
+		infoTxt += szTxt;
+		memset(szTxt, 0, 256);
+		sprintf_s(szTxt, "\t\t顶点数：%d\n", model->nVertexCount);
+		infoTxt += szTxt;
+		memset(szTxt, 0, 256);
+		sprintf_s(szTxt, "\t\t面数：%d\n", model->nIndexCount / 3);
+		infoTxt += szTxt;
+	}
+	memset(szTxt, 0, 256);
+	sprintf_s(szTxt, "蒙皮数：%d\n", models->mSkins.Count());
+	infoTxt += szTxt;
+
+	ImGui::SetNextWindowPos(ImVec2(0, 0));
+	ImGui::SetNextWindowSize(ImVec2(256, (float)mHeight));
+	ImGui::Begin(STU("转换器").c_str());
+
+	if (mMeshRenderer->mIsSkinnedMesh)
+	{
+		if (ImGui::CollapsingHeader(STU("蒙皮模型减面").c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ImGui::Indent(15.0f);
+			int* collapseParam = new int[models->mMeshes.Count()];
+			for (int i = 0; i < models->mMeshes.Count(); ++i)
+			{
+				ImGui::Text(STU("模型[%d]预期顶点数").c_str(), i + 1);
+
+				ImGui::SameLine();
+				ImGui::PushID(mImGuiID++);
+				ImGui::PushItemWidth(50);
+				ImGui::DragInt(STU("个").c_str(), &mDisireVtxNums[i], 1.0f, 3, mMaxDisireVtxNums[i]);
+				ImGui::PopItemWidth();
+				ImGui::PopID();
+
+				collapseParam[i] = mDisireVtxNums[i];
+			}
+
+			ImGui::PushID(mImGuiID++);
+			if (ImGui::Button(STU("坍塌").c_str(), ImVec2(150, 30)))
+			{
+				mMeshRenderer->Collapse(collapseParam, models->mMeshes.Count());
+			}
+			ImGui::PopID();
+			delete[] collapseParam;
+			ImGui::Unindent(15.0f);
+		}
+	}
+
+	if (ImGui::CollapsingHeader(STU("模型信息").c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::Indent(15.0f);
+		ImGui::Text(STU(infoTxt).c_str());
+		ImGui::Unindent(15.0f);
+	}
 	ImGui::End();
 }
 

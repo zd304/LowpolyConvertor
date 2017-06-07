@@ -22,12 +22,18 @@ public:
 public:
 	IDirect3DDevice9* mDevice;
 	HWND mHwnd;
+	int mWidth;
+	int mHeight;
 	D3DMATERIAL9 material;
 	D3DXMATRIX mMatWorld;
 	float rot;
 	DWORD mLastTime;
 
 	ProgressiveMeshRenderer* mMeshRenderer;
+
+	int mImGuiID;
+	List<int> mDisireVtxNums;
+	List<int> mMaxDisireVtxNums;
 };
 
 #endif
