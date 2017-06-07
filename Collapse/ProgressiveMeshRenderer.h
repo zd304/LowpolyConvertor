@@ -13,7 +13,7 @@ struct PMeshVertex_Tmp
 	D3DXVECTOR3 normal;
 	unsigned int color;
 	D3DXVECTOR2 uv;
-	void* skin;
+	void* skin = NULL;
 };
 
 struct PMeshModel

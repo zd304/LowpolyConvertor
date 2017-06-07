@@ -1,6 +1,7 @@
 #include "Collapse.h"
 #include "list.h"
 #include <assert.h>
+#include "SkinCollapse.h"
 
 namespace Collapse
 {
@@ -375,7 +376,9 @@ namespace Collapse
 			}
 			curvature = max(curvature, mincurv);
 		}
-		return edgelength * curvature;
+
+		float skincost = SkinCollapse::ComputeSkinCost(v->vertex, u->vertex);
+		return edgelength * curvature * skincost;
 	}
 
 	void ComputeEdgeCostAtVertex(CollapseVertex* v)

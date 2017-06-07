@@ -45,7 +45,7 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 	rot = 0.0f;
 
 	mMeshRenderer = new ProgressiveMeshRenderer(mDevice);
-	int ffff[] = {1000};
+	int ffff[] = {800};
 	mMeshRenderer->Collapse(ffff, 1);
 }
 
