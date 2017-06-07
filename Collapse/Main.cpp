@@ -1,7 +1,12 @@
 #include "Test.h"
 #include <stdio.h>
+#include "imgui/imgui.h"
+#include "imgui_impl_dx9.h"
+
+static D3DPRESENT_PARAMETERS    g_d3dpp;
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+extern LRESULT ImGui_ImplDX9_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 //函数开始;
 
 const int width = 800;
@@ -73,40 +78,38 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	else
 		vp = D3DCREATE_SOFTWARE_VERTEXPROCESSING;
 
-	D3DPRESENT_PARAMETERS d3dpp;
-	d3dpp.BackBufferWidth = width;
-	d3dpp.BackBufferHeight = height;
-	d3dpp.BackBufferFormat = D3DFMT_A8R8G8B8;
-	d3dpp.BackBufferCount = 1;
-	d3dpp.MultiSampleType = D3DMULTISAMPLE_NONE;
-	d3dpp.MultiSampleQuality = 0;
-	d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
-	d3dpp.hDeviceWindow = hwnd;
-	d3dpp.Windowed = true;
-	d3dpp.EnableAutoDepthStencil = true;
-	d3dpp.AutoDepthStencilFormat = D3DFMT_D24S8;
-	d3dpp.Flags = 0;
-	d3dpp.FullScreen_RefreshRateInHz = D3DPRESENT_RATE_DEFAULT;
-	d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+	ZeroMemory(&g_d3dpp, sizeof(g_d3dpp));
+	g_d3dpp.BackBufferFormat = D3DFMT_A8R8G8B8;
+	g_d3dpp.BackBufferCount = 1;
+	g_d3dpp.MultiSampleType = D3DMULTISAMPLE_NONE;
+	g_d3dpp.MultiSampleQuality = 0;
+	g_d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
+	g_d3dpp.hDeviceWindow = hwnd;
+	g_d3dpp.Windowed = true;
+	g_d3dpp.EnableAutoDepthStencil = true;
+	g_d3dpp.AutoDepthStencilFormat = D3DFMT_D24S8;
+	g_d3dpp.Flags = 0;
+	g_d3dpp.FullScreen_RefreshRateInHz = D3DPRESENT_RATE_DEFAULT;
+	g_d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
 
 	hr = d3d9->CreateDevice(
 		D3DADAPTER_DEFAULT,
 		deviceType,
 		hwnd,
 		vp,
-		&d3dpp,
+		&g_d3dpp,
 		&Device);
 	if (FAILED(hr))
 	{
 		// try again using a 16-bit depth buffer
-		d3dpp.AutoDepthStencilFormat = D3DFMT_D16;
+		g_d3dpp.AutoDepthStencilFormat = D3DFMT_D16;
 
 		hr = d3d9->CreateDevice(
 			D3DADAPTER_DEFAULT,
 			deviceType,
 			hwnd,
 			vp,
-			&d3dpp,
+			&g_d3dpp,
 			&Device);
 
 		if (FAILED(hr))
@@ -120,6 +123,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	{
 		//开始设置参数;
 		test.OnInit(hwnd, Device);
+
+		ImGui_ImplDX9_Init(hwnd, Device);
 	}
 
 	d3d9->Release(); // done with d3d9 object
@@ -136,6 +141,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		}
 		else
 		{
+			ImGui_ImplDX9_NewFrame();
+			test.OnGUI();
+
 			float curTime = (float)timeGetTime();
 			float timeDelta = (curTime - lastTime)*0.001f;
 			if (Device)
@@ -143,6 +151,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 				Device->BeginScene();
 				Device->Clear(0, 0, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0x00666666, 1.0f, 0);
 				//开始显示;
+				ImGui::Render();
 				test.OnUpdate();
 				Device->EndScene();
 
@@ -151,7 +160,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 			lastTime = curTime;
 		}
 	}
+
 	test.OnQuit();
+	ImGui_ImplDX9_Shutdown();
 	UnregisterClass("Direct3D9App", wc.hInstance);
 	FreeConsole();
 	return 0;
@@ -163,8 +174,23 @@ LRESULT CALLBACK WndProc(
 	WPARAM wParam,
 	LPARAM lParam)
 {
+	if (ImGui_ImplDX9_WndProcHandler(hwnd, msg, wParam, lParam))
+		return true;
+
 	switch (msg)
 	{
+	case WM_SIZE:
+		if (Device != NULL && wParam != SIZE_MINIMIZED)
+		{
+			ImGui_ImplDX9_InvalidateDeviceObjects();
+			g_d3dpp.BackBufferWidth = LOWORD(lParam);
+			g_d3dpp.BackBufferHeight = HIWORD(lParam);
+			HRESULT hr = Device->Reset(&g_d3dpp);
+			if (hr == D3DERR_INVALIDCALL)
+				IM_ASSERT(0);
+			ImGui_ImplDX9_CreateDeviceObjects();
+		}
+		return 0;
 	case WM_DESTROY:
 		::PostQuitMessage(0);
 		break;

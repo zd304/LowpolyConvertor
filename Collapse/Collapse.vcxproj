@@ -71,6 +71,11 @@
     <ClCompile Include="Collapse.cpp" />
     <ClCompile Include="FBXCommon.cpp" />
     <ClCompile Include="FBXHelper.cpp" />
+    <ClCompile Include="imgui\imgui.cpp" />
+    <ClCompile Include="imgui\imgui_demo.cpp" />
+    <ClCompile Include="imgui\imgui_draw.cpp" />
+    <ClCompile Include="imgui_impl_dx9.cpp" />
+    <ClCompile Include="inc.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="ProgressiveMeshRenderer.cpp" />
     <ClCompile Include="SkinCollapse.cpp" />
@@ -80,6 +85,14 @@
     <ClInclude Include="Collapse.h" />
     <ClInclude Include="FBXCommon.h" />
     <ClInclude Include="FBXHelper.h" />
+    <ClInclude Include="imgui\imconfig.h" />
+    <ClInclude Include="imgui\imgui.h" />
+    <ClInclude Include="imgui\imgui_internal.h" />
+    <ClInclude Include="imgui\stb_rect_pack.h" />
+    <ClInclude Include="imgui\stb_textedit.h" />
+    <ClInclude Include="imgui\stb_truetype.h" />
+    <ClInclude Include="imgui_impl_dx9.h" />
+    <ClInclude Include="inc.h" />
     <ClInclude Include="list.h" />
     <ClInclude Include="ProgressiveMeshRenderer.h" />
     <ClInclude Include="SkinCollapse.h" />

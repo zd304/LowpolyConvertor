@@ -1,63 +1,96 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="源文件">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    <Filter Include="src">
+      <UniqueIdentifier>{769f5b60-204f-408d-bc15-1d0d28386738}</UniqueIdentifier>
     </Filter>
-    <Filter Include="头文件">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
-    </Filter>
-    <Filter Include="资源文件">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="imgui">
+      <UniqueIdentifier>{49ead7a6-5a9a-4199-ad4a-ed4cc9d7ac90}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Main.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Test.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="Collapse.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="FBXHelper.cpp">
-      <Filter>源文件</Filter>
+      <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="FBXCommon.cpp">
-      <Filter>源文件</Filter>
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="FBXHelper.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="Main.cpp">
+      <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="ProgressiveMeshRenderer.cpp">
-      <Filter>源文件</Filter>
+      <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="SkinCollapse.cpp">
-      <Filter>源文件</Filter>
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="Test.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui\imgui.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui\imgui_demo.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui\imgui_draw.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui_impl_dx9.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="inc.cpp">
+      <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Test.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="Collapse.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="list.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="FBXHelper.h">
-      <Filter>头文件</Filter>
+      <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="FBXCommon.h">
-      <Filter>头文件</Filter>
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="FBXHelper.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="list.h">
+      <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="ProgressiveMeshRenderer.h">
-      <Filter>头文件</Filter>
+      <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="SkinCollapse.h">
-      <Filter>头文件</Filter>
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="Test.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\imconfig.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\imgui.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\imgui_internal.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\stb_truetype.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\stb_rect_pack.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\stb_textedit.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui_impl_dx9.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="inc.h">
+      <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

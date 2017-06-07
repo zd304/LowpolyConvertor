@@ -1,6 +1,6 @@
 #include "Test.h"
-#include <fstream>
 #include "ProgressiveMeshRenderer.h"
+#include "imgui/imgui.h"
 
 Test::Test()
 {
@@ -16,6 +16,9 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 {
 	mDevice = device;
 	mHwnd = hwnd;
+
+	ImGuiIO& io = ImGui::GetIO();
+	io.Fonts->AddFontFromFileTTF("msyh.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
 
 	mLastTime = timeGetTime();
 
@@ -47,6 +50,15 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 	mMeshRenderer = new ProgressiveMeshRenderer(mDevice);
 	int ffff[] = {800};
 	mMeshRenderer->Collapse(ffff, 1);
+}
+
+void Test::OnGUI()
+{
+	ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiSetCond_Once);
+	ImGui::SetNextWindowSize(ImVec2(200, 100), ImGuiSetCond_FirstUseEver);
+	ImGui::Begin(STU("Fbx文件信息").c_str());
+	ImGui::Text("Hello");
+	ImGui::End();
 }
 
 void Test::OnUpdate()

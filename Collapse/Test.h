@@ -1,11 +1,7 @@
 #ifndef __TEST_H__
 #define __TEST_H__
 
-#include <Windows.h>
-#include <d3d9.h>
-#include <d3dx9.h>
-#include <vector>
-#include <string>
+#include "inc.h"
 #include "FBXHelper.h"
 
 class ProgressiveMeshRenderer;
@@ -19,6 +15,8 @@ public:
 	void OnInit(HWND hwnd, IDirect3DDevice9* device);
 
 	void OnUpdate();
+
+	void OnGUI();
 
 	void OnQuit();
 public:
