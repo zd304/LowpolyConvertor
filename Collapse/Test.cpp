@@ -1,5 +1,6 @@
 #include "Test.h"
 #include "ProgressiveMeshRenderer.h"
+#include "BoneRenderer.h"
 #include "imgui/imgui.h"
 
 Test::Test()
@@ -26,7 +27,7 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 
 	mLastTime = timeGetTime();
 
-	FBXHelper::BeginFBXHelper("humanoid.fbx");
+	FBXHelper::BeginFBXHelper("scorpid.FBX");
 	FBXHelper::FbxModelList* models = FBXHelper::GetModelList();
 	mDisireVtxNums.Clear();
 	mMaxDisireVtxNums.Clear();
@@ -39,9 +40,9 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 
 	D3DXMATRIX matView, matProj;
 	D3DXMatrixPerspectiveFovLH(&matProj, D3DX_PI / 4.0f, 800.0f / 600.0f, 0.1f, 10000.0f);
-	D3DXMatrixLookAtLH(&matView, &D3DXVECTOR3(0.0f, 0.0f, -400.0f),
-		&D3DXVECTOR3(0.0f, 0.0f, 400.0f), &D3DXVECTOR3(0.0f, 1.0f, 0.0f));
-	D3DXMatrixTranslation(&mMatWorld, 0.0f, -0.1f, 0.0f);
+	D3DXMatrixLookAtLH(&matView, &D3DXVECTOR3(0.0f, 0.0f, -40.0f),
+		&D3DXVECTOR3(0.0f, 0.0f, 40.0f), &D3DXVECTOR3(0.0f, 1.0f, 0.0f));
+	D3DXMatrixScaling(&mMatWorld, -1.0f, -1.0f, -1.0f);
 
 	device->SetTransform(D3DTS_PROJECTION, &matProj);
 	device->SetTransform(D3DTS_VIEW, &matView);
@@ -62,6 +63,9 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 
 	mMeshRenderer = new ProgressiveMeshRenderer(mDevice);
 	mMeshRenderer->Collapse(NULL, 1);
+
+	mBoneRenderer = new BoneRenderer(mDevice);
+	mBoneRenderer->BuildMesh();
 }
 
 void Test::OnGUI()
@@ -147,6 +151,9 @@ void Test::OnUpdate()
 	mDevice->SetTransform(D3DTS_WORLD, &mMatWorld);
 
 	mMeshRenderer->Render();
+
+	//mBoneRenderer->Render();
+
 	mLastTime = curTime;
 }
 
@@ -154,5 +161,6 @@ void Test::OnQuit()
 {
 	if (mMeshRenderer)
 		delete mMeshRenderer;
+	SAFE_DELETE(mBoneRenderer);
 	FBXHelper::EndFBXHelper();
 }

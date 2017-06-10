@@ -5,6 +5,7 @@
 #include "FBXHelper.h"
 
 class ProgressiveMeshRenderer;
+class BoneRenderer;
 
 class Test
 {
@@ -30,6 +31,7 @@ public:
 	DWORD mLastTime;
 
 	ProgressiveMeshRenderer* mMeshRenderer;
+	BoneRenderer* mBoneRenderer;
 
 	int mImGuiID;
 	List<int> mDisireVtxNums;

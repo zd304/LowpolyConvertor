@@ -69,13 +69,20 @@ ProgressiveMeshRenderer::ProgressiveMeshRenderer(IDirect3DDevice9* device)
 		{
 			continue;
 		}
-		FBXHelper::FbxSkinInfo* skin = models->mSkins[i];
-		if (skin->size != fbxmodel->nVertexCount)
-			continue;
-		for (unsigned int j = 0; j < skin->size; ++j)
+		if (models->mSkins.Count() > i)
 		{
-			FBXHelper::FbxBoneWeight* bw = &(skin->weights[j]);
-			pmmodel->pVB[j].skin = bw;
+			FBXHelper::FbxSkinInfo* skin = models->mSkins[i];
+			if (skin->size != fbxmodel->nVertexCount)
+				continue;
+			for (unsigned int j = 0; j < skin->size; ++j)
+			{
+				FBXHelper::FbxBoneWeight* bw = &(skin->weights[j]);
+				pmmodel->pVB[j].skin = bw;
+				if (bw->boneName.Count() == 0)
+				{
+					//printf("vertex(%d) has no any skin info!\n", j);
+				}
+			}
 		}
 
 		mModels.Add(pmmodel);
@@ -223,13 +230,13 @@ void ProgressiveMeshRenderer::Render()
 
 	for (int m = 0; m < mMeshes.Count(); ++m)
 	{
-		CustomVertex_t* vertices = NULL;
 		FBXHelper::FbxBoneMap* bonemap = FBXHelper::GetBoneMap();
 
 		ID3DXMesh* mesh = mMeshes[m];
 
 		if (mIsSkinnedMesh)
 		{
+			CustomVertex_t* vertices = NULL;
 			mesh->LockVertexBuffer(0, (void**)&vertices);
 
 			BindVertexBuffer& bvb = mBindVertexBuffer[m];
@@ -241,7 +248,7 @@ void ProgressiveMeshRenderer::Render()
 			for (int i = 0; i < bonemap->mBoneList.Count(); ++i)
 			{
 				FBXHelper::FbxBone* bone = bonemap->mBoneList[i];
-				bone->offset = animEvaluator->Evaluator(bone, "shot", mAnimTime);
+				bone->offset = animEvaluator->Evaluator(bone, "Take 001", mAnimTime);
 
 				FocusBoneWeight_t* fbw = mFBSkin[m]->skins[bone->name];
 				if (!fbw) continue;

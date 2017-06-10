@@ -191,12 +191,12 @@ namespace FBXHelper
 #else
 		FbxAMatrix mat = lclCurve->node->EvaluateGlobalTransform(t);
 #endif
-		if (bone->meshNode)
-		{
-			FbxNode* mn = bone->meshNode->GetNode();
-			FbxAMatrix matMesh = mn->EvaluateGlobalTransform(t);
-			mat = matMesh.Inverse() * mat;
-		}
+		//if (bone->meshNode)
+		//{
+		//	FbxNode* mn = bone->meshNode->GetNode();
+		//	FbxAMatrix matMesh = mn->EvaluateGlobalTransform(t);
+		//	mat = matMesh.Inverse() * mat;
+		//}
 		return ToD3DMatrix(mat);
 	}
 
@@ -238,7 +238,7 @@ namespace FBXHelper
 		animCurves.clear();
 	}
 
-	void ProcessNode(FbxNode* pNode, FbxNode* pParent = NULL);
+	void ProcessNode(FbxNode* pNode, FbxNode* pParent = NULL, int mask = -1);
 
 	bool BeginFBXHelper(const char* fileName)
 	{
@@ -264,6 +264,9 @@ namespace FBXHelper
 			printf("Right-Hand!\n");
 		}
 
+		FbxGeometryConverter converter(pFBXSDKManager);
+		converter.Triangulate(pFBXScene, true);
+
 		pMeshList = new FbxModelList();
 
 		int numStacks = pFBXScene->GetSrcObjectCount<fbxsdk_2015_1::FbxAnimStack>();
@@ -272,7 +275,8 @@ namespace FBXHelper
 			pAnimEvaluator = new FbxAnimationEvaluator();
 		}
 
-		ProcessNode(pFBXScene->GetRootNode());
+		ProcessNode(pFBXScene->GetRootNode(), NULL, FbxNodeAttribute::eSkeleton);
+		ProcessNode(pFBXScene->GetRootNode(), NULL, FbxNodeAttribute::eMesh);
 
 		return rst;
 	}
@@ -291,12 +295,15 @@ namespace FBXHelper
 		{
 			// s番目のスキンを取得;
 			FbxSkin* skinDeformer = (FbxSkin*)pMesh->GetDeformer(s, FbxDeformer::eSkin);
+			int cpic = skinDeformer->GetControlPointIndicesCount();
 
-			for (int i = 0; i < skinDeformer->GetClusterCount(); ++i)
+			int clusterCount = skinDeformer->GetClusterCount();
+			for (int clusterIndex = 0; clusterIndex < clusterCount; ++clusterIndex)
 			{
-				FbxCluster* cluster = skinDeformer->GetCluster(i);
+				FbxCluster* cluster = skinDeformer->GetCluster(clusterIndex);
 				FbxNode* link = cluster->GetLink();
-				if (!link) continue;
+				if (!link)
+					continue;
 				const char* boneName = link->GetName();
 
 				FbxBoneMap::IT_BM itbm = pSkeleton->mBones.find(boneName);
@@ -304,6 +311,15 @@ namespace FBXHelper
 				{
 					FbxBone* bone = itbm->second;
 					FbxAMatrix transformLinkMatrix, transformMatrix, matBindPose;
+
+					std::string txt;
+					for (int ll = 0; ll < bone->layer; ++ll)
+					{
+						txt += "  ";
+					}
+					txt += bone->name;
+					txt += "\n";
+					printf(txt.c_str());
 
 					// ボーンの初期姿勢を取得;
 					cluster->GetTransformLinkMatrix(transformLinkMatrix);
@@ -327,10 +343,11 @@ namespace FBXHelper
 
 				int* indices = cluster->GetControlPointIndices();
 				double* weights = cluster->GetControlPointWeights();
-				for (int j = 0; j < cluster->GetControlPointIndicesCount(); ++j)
+				int indexCount = cluster->GetControlPointIndicesCount();
+				for (int pi = 0; pi < indexCount; ++pi)
 				{
-					int vtxIndex = indices[j];
-					double weight = weights[j];
+					int vtxIndex = indices[pi];
+					double weight = weights[pi];
 					FbxBoneWeight& bw = skinInfo->weights[vtxIndex];
 					bw.boneName.Add(boneName);
 					bw.weight.Add(weight);
@@ -409,25 +426,19 @@ namespace FBXHelper
 		FbxBone* bone = new FbxBone();
 		bone->id = pSkeleton->mBones.size();
 		bone->name = pNode->GetName();
-
-		FbxAMatrix matBindPose;// = pNode->EvaluateGlobalTransform();
-		FbxVector4 vt(pNode->LclTranslation.Get());
-		FbxVector4 vr(pNode->LclRotation.Get());
-		FbxVector4 vs(pNode->LclScaling.Get());
-		matBindPose.SetTRS(vt, vr, vs);
+		bone->layer = 0;
 
 		if (parent)
 		{
 			FbxBone* parentBone = pSkeleton->mBones[parent->GetName()];
 			bone->parent = parentBone;
+			bone->layer = parentBone->layer + 1;
 			parentBone->children.push_back(bone);
-			matBindPose = ToFbxMatrix(parentBone->bindPose) * matBindPose;
 		}
 
-		//matBindPose.SetS(FbxVector4(1, 1, 1, 1));
-		bone->bindPose = ToD3DMatrix(matBindPose);
+		D3DXMatrixIdentity(&bone->bindPose);
 		pSkeleton->mBones[bone->name] = bone;
-		pSkeleton->mBoneList.AddUnique(bone);
+		pSkeleton->mBoneList.Add(bone);
 
 		ProcessAnimation(pNode, bone);
 	}
@@ -476,7 +487,7 @@ namespace FBXHelper
 		meshData->nVertexCount = pMesh->GetControlPointsCount();
 		if (!allByControlPoint)
 		{
-			meshData->nVertexCount = triangleCount * 3;
+			//meshData->nVertexCount = triangleCount * 3;
 		}
 		meshData->nIndexCount = triangleCount * 3;
 
@@ -560,15 +571,15 @@ namespace FBXHelper
 			{
 				const int controlPointIndex = pMesh->GetPolygonVertex(polygonIndex, i);
 
-				if (allByControlPoint)
+				//if (allByControlPoint)
 				{
 					meshData->pIB[polygonIndex * 3 + i] = (unsigned int)controlPointIndex;
 				}
-				else
+				//else
 				{
-					meshData->pIB[polygonIndex * 3 + i] = static_cast<unsigned int>(vertexIndex);
+					//meshData->pIB[polygonIndex * 3 + i] = static_cast<unsigned int>(vertexIndex);
 
-					FbxMeshVertex_Tmp* vertex = &(meshData->pVB[vertexIndex]);
+					FbxMeshVertex_Tmp* vertex = &(meshData->pVB[controlPointIndex]);// &(meshData->pVB[vertexIndex]);
 					currentVertex = controlPoints[controlPointIndex];
 					vertex->pos.x = (float)currentVertex[0];
 					vertex->pos.y = (float)currentVertex[1];
@@ -608,7 +619,7 @@ namespace FBXHelper
 		FbxSkinInfo* skinInfo = ProcessSkin(pMesh, meshData->nVertexCount);
 	}
 
-	void ProcessNode(FbxNode* pNode, FbxNode* pParent)
+	void ProcessNode(FbxNode* pNode, FbxNode* pParent, int mask)
 	{
 		FbxNodeAttribute* attributeType = pNode->GetNodeAttribute();
 		if (attributeType)
@@ -616,10 +627,12 @@ namespace FBXHelper
 			switch (attributeType->GetAttributeType())
 			{
 			case FbxNodeAttribute::eMesh:
-				ProcessMesh(pNode);
+				if (mask == -1 || mask == FbxNodeAttribute::eMesh)
+					ProcessMesh(pNode);
 				break;
 			case FbxNodeAttribute::eSkeleton:
-				ProcessSkeleton(pNode, pParent);
+				if (mask == -1 || mask == FbxNodeAttribute::eSkeleton)
+					ProcessSkeleton(pNode, pParent);
 				break;
 			default:
 				break;
@@ -627,7 +640,7 @@ namespace FBXHelper
 		}
 		for (int i = 0; i < pNode->GetChildCount(); ++i)
 		{
-			ProcessNode(pNode->GetChild(i), pNode);
+			ProcessNode(pNode->GetChild(i), pNode, mask);
 		}
 	}
 

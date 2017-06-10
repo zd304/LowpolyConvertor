@@ -55,6 +55,7 @@ namespace FBXHelper
 		D3DXMATRIX bindPose;
 		D3DXMATRIX offset;
 		FbxMesh* meshNode = NULL;
+		int layer = 0;
 		FbxBone* parent = NULL;
 		std::vector<FbxBone*> children;
 	};

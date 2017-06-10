@@ -68,6 +68,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BoneRenderer.cpp" />
     <ClCompile Include="Collapse.cpp" />
     <ClCompile Include="FBXCommon.cpp" />
     <ClCompile Include="FBXHelper.cpp" />
@@ -82,6 +83,7 @@
     <ClCompile Include="Test.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BoneRenderer.h" />
     <ClInclude Include="Collapse.h" />
     <ClInclude Include="FBXCommon.h" />
     <ClInclude Include="FBXHelper.h" />
