@@ -57,7 +57,7 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 	device->SetMaterial(&material);
 	mRotSpeed = 0.0f;
 
-	FBXHelper::BeginFBXHelper("humanoid.fbx");
+	FBXHelper::BeginFBXHelper("scorpid.FBX");
 	FBXHelper::FbxModelList* models = FBXHelper::GetModelList();
 	mDisireVtxNums.Clear();
 	mMaxDisireVtxNums.Clear();
@@ -240,6 +240,11 @@ void Test::OnUpdate()
 	D3DXMatrixRotationY(&matRot, dt * mRotSpeed);
 	D3DXMatrixMultiply(&mMatWorld, &mMatWorld, &matRot);
 	mDevice->SetTransform(D3DTS_WORLD, &mMatWorld);
+
+	D3DLIGHT9 light;
+	mDevice->GetLight(0, &light);
+	light.Direction = D3DXVECTOR3(1.0f, 1.0f, 1.0f);
+	mDevice->SetLight(0, &light);
 
 	FBXHelper::UpdateSkeleton();
 

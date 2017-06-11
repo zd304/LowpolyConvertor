@@ -16,6 +16,7 @@ BoneRenderer::BoneRenderer(IDirect3DDevice9* device)
 	mMesh = NULL;
 	mThick = 2.0f;
 	mShowAnimated = true;
+	mColor = 0xff00aaff;
 }
 
 BoneRenderer::~BoneRenderer()
@@ -53,15 +54,15 @@ void BoneRenderer::BuildMesh()
 		D3DXVec3Cross(&subRight, &naxis, &subForward);
 		D3DXVec3Normalize(&subRight, &subRight);
 
-		CustomVertex_br cvt{ end, 0xffffffff };
+		CustomVertex_br cvt{ end, mColor };
 		sk_vb.push_back(cvt);
-		CustomVertex_br cv1{ start + mThick * subRight, 0xffffffff };
+		CustomVertex_br cv1{ start + mThick * subRight, mColor };
 		sk_vb.push_back(cv1);
-		CustomVertex_br cv2{ start - mThick * subRight, 0xffffffff };
+		CustomVertex_br cv2{ start - mThick * subRight, mColor };
 		sk_vb.push_back(cv2);
-		CustomVertex_br cv3{ start + mThick * subForward, 0xffffffff };
+		CustomVertex_br cv3{ start + mThick * subForward, mColor };
 		sk_vb.push_back(cv3);
-		CustomVertex_br cv4{ start - mThick * subForward, 0xffffffff };
+		CustomVertex_br cv4{ start - mThick * subForward, mColor };
 		sk_vb.push_back(cv4);
 
 		sk_ib.push_back(0 + triIndex);
@@ -165,15 +166,15 @@ void BoneRenderer::Render()
 			D3DXVec3Cross(&subRight, &naxis, &subForward);
 			D3DXVec3Normalize(&subRight, &subRight);
 
-			CustomVertex_br cvt{ end, 0xffffffff };
+			CustomVertex_br cvt{ end, mColor };
 			sk_vb.push_back(cvt);
-			CustomVertex_br cv1{ start + mThick * subRight, 0xffffffff };
+			CustomVertex_br cv1{ start + mThick * subRight, mColor };
 			sk_vb.push_back(cv1);
-			CustomVertex_br cv2{ start - mThick * subRight, 0xffffffff };
+			CustomVertex_br cv2{ start - mThick * subRight, mColor };
 			sk_vb.push_back(cv2);
-			CustomVertex_br cv3{ start + mThick * subForward, 0xffffffff };
+			CustomVertex_br cv3{ start + mThick * subForward, mColor };
 			sk_vb.push_back(cv3);
-			CustomVertex_br cv4{ start - mThick * subForward, 0xffffffff };
+			CustomVertex_br cv4{ start - mThick * subForward, mColor };
 			sk_vb.push_back(cv4);
 
 			sk_ib.push_back(0 + triIndex);
@@ -208,7 +209,7 @@ void BoneRenderer::Render()
 		mMesh->UnlockVertexBuffer();
 	}
 
-	mDevice->LightEnable(0, FALSE);
+	mDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
 	mMesh->DrawSubset(0);
-	mDevice->LightEnable(0, TRUE);
+	mDevice->SetRenderState(D3DRS_LIGHTING, TRUE);
 }

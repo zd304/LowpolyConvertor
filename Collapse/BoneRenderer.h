@@ -25,6 +25,8 @@ private:
 	IDirect3DDevice9* mDevice;
 	float mThick;
 	bool mShowAnimated;
+public:
+	D3DXCOLOR mColor;
 };
 
 #endif // !__BONE_RENDERER_H__
