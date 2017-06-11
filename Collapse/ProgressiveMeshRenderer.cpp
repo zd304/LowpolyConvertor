@@ -102,7 +102,7 @@ ProgressiveMeshRenderer::~ProgressiveMeshRenderer()
 	mIsSkinnedMesh = false;
 }
 
-void ProgressiveMeshRenderer::Collapse(int* vtxnums, int meshCount)
+void ProgressiveMeshRenderer::Collapse(int* vtxnums, int meshCount, bool seperation)
 {
 	Clear();
 	meshCount = std::min<int>(meshCount, mModels.Count());
@@ -113,24 +113,34 @@ void ProgressiveMeshRenderer::Collapse(int* vtxnums, int meshCount)
 		Collapse::DoCollapse(vtxnums ? vtxnums[i] : pmmodel->nVertexCount);
 		Collapse::Buffer* buffer = Collapse::GetBuffer();
 		int faceNum = buffer->i_count / 3;
+		int vertexNum = buffer->v_count;
+		if (seperation)
+		{
+			vertexNum = buffer->i_count;
+		}
 		ID3DXMesh* pMesh = NULL;
-		HRESULT hr = D3DXCreateMeshFVF(faceNum, buffer->v_count, D3DXMESH_32BIT, fvf, mDevice, &pMesh);
+		HRESULT hr = D3DXCreateMeshFVF(faceNum, vertexNum, D3DXMESH_32BIT, fvf, mDevice, &pMesh);
 		if (!FAILED(hr))
 		{
 			FocuseBoneSkin_t* skin = new FocuseBoneSkin_t();
-			CustomVertex_t* pvb_t = new CustomVertex_t[buffer->v_count];
-			for (size_t j = 0; j < buffer->v_count; ++j)
+			CustomVertex_t* pvb_t = new CustomVertex_t[vertexNum];
+			for (int j = 0; j < vertexNum; ++j)
 			{
-				PMeshVertex_Tmp& vtx = ((PMeshVertex_Tmp*)buffer->vertices)[j];
+				PMeshVertex_Tmp* vtcs = (PMeshVertex_Tmp*)buffer->vertices;
+				PMeshVertex_Tmp* vtx = NULL;
+				if (!seperation)
+					vtx = &(vtcs[j]);
+				else
+					vtx = &(vtcs[((unsigned int*)buffer->indices)[j]]);
 				CustomVertex_t& vtx_t = pvb_t[j];
-				vtx_t.pos = vtx.pos;
-				vtx_t.normal = vtx.normal;
-				vtx_t.color = vtx.color;
-				vtx_t.uv = vtx.uv;
+				vtx_t.pos = vtx->pos;
+				vtx_t.normal = vtx->normal;
+				vtx_t.color = vtx->color;
+				vtx_t.uv = vtx->uv;
 
 				// 把关注点信息的蒙皮信息改为关注骨骼的蒙皮信息，方便渲染;
 				if (!mIsSkinnedMesh) continue;
-				FBXHelper::FbxBoneWeight* bw = (FBXHelper::FbxBoneWeight*)vtx.skin;
+				FBXHelper::FbxBoneWeight* bw = (FBXHelper::FbxBoneWeight*)vtx->skin;
 				for (int k = 0; k < bw->boneName.Count(); ++k)
 				{
 					std::string& sName = bw->boneName[k];
@@ -147,18 +157,48 @@ void ProgressiveMeshRenderer::Collapse(int* vtxnums, int meshCount)
 			BindVertexBuffer bvb;
 			bvb.vb = pvb_t;
 			bvb.count = buffer->v_count;
+			if (seperation)
+			{
+				bvb.count = buffer->i_count;
+			}
 
 			mBindVertexBuffer.Add(bvb);
 			mFBSkin.Add(skin);
 
+			void* ib = NULL;
+			pMesh->LockIndexBuffer(0, (void**)&ib);
+			if (!seperation)
+				memcpy(ib, buffer->indices, buffer->i_count * buffer->i_stride);
+			else
+			{
+				unsigned int* pIB = (unsigned int*)ib;
+				for (int f = 0; f < faceNum; ++f)
+				{
+					for (int vi = 0; vi < 3; ++vi)
+					{
+						size_t index = f * 3 + vi;
+						pIB[index] = index;
+					}
+					CustomVertex_t& cv1 = pvb_t[f * 3 + 0];
+					CustomVertex_t& cv2 = pvb_t[f * 3 + 1];
+					CustomVertex_t& cv3 = pvb_t[f * 3 + 2];
+					D3DXVECTOR3 edge1 = cv1.pos - cv2.pos;
+					D3DXVECTOR3 edge2 = cv3.pos - cv2.pos;
+					D3DXVec3Normalize(&edge1, &edge1);
+					D3DXVec3Normalize(&edge2, &edge2);
+					D3DXVECTOR3 n;
+					D3DXVec3Cross(&n, &edge2, &edge1);
+					D3DXVec3Normalize(&n, &n);
+					cv1.normal = n;
+					cv2.normal = n;
+					cv3.normal = n;
+				}
+			}
+			pMesh->UnlockIndexBuffer();
 			void* vb = NULL;
 			pMesh->LockVertexBuffer(0, (void**)&vb);
 			memcpy(vb, pvb_t, buffer->v_count * sizeof(CustomVertex_t));
 			pMesh->UnlockVertexBuffer();
-			void* ib = NULL;
-			pMesh->LockIndexBuffer(0, (void**)&ib);
-			memcpy(ib, buffer->indices, buffer->i_count * buffer->i_stride);
-			pMesh->UnlockIndexBuffer();
 
 			pvb_t = NULL;
 			mMeshes.Add(pMesh);

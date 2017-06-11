@@ -44,7 +44,7 @@ public:
 	ProgressiveMeshRenderer(IDirect3DDevice9* device);
 	~ProgressiveMeshRenderer();
 
-	void Collapse(int* facenums, int meshCount);
+	void Collapse(int* facenums, int meshCount, bool seperation = false);
 	void Render();
 private:
 	void Clear();

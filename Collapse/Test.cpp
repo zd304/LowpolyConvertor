@@ -147,7 +147,7 @@ void Test::OnGUI()
 			ImGui::PushID(mImGuiID++);
 			if (ImGui::Button(STU("Ì®Ëú").c_str(), ImVec2(150, 30)))
 			{
-				mMeshRenderer->Collapse(collapseParam, models->mMeshes.Count());
+				mMeshRenderer->Collapse(collapseParam, models->mMeshes.Count(), true);
 			}
 			ImGui::PopID();
 			delete[] collapseParam;
