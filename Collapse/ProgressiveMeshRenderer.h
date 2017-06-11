@@ -57,8 +57,6 @@ public:
 	List<BindVertexBuffer> mBindVertexBuffer;
 	IDirect3DDevice9* mDevice;
 	bool mIsSkinnedMesh;
-	DWORD mLastTime;
-	float mAnimTime;
 	// 关注于骨骼的蒙皮信息（便于CPU蒙皮）;
 	List<FocuseBoneSkin_t*> mFBSkin;
 };

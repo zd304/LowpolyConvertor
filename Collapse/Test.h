@@ -27,7 +27,7 @@ public:
 	int mHeight;
 	D3DMATERIAL9 material;
 	D3DXMATRIX mMatWorld;
-	float rot;
+	float mRotSpeed;
 	DWORD mLastTime;
 
 	ProgressiveMeshRenderer* mMeshRenderer;
@@ -36,6 +36,8 @@ public:
 	int mImGuiID;
 	List<int> mDisireVtxNums;
 	List<int> mMaxDisireVtxNums;
+	bool mShowMesh;
+	bool mShowBone;
 };
 
 #endif

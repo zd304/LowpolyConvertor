@@ -54,8 +54,8 @@ namespace FBXHelper
 		std::string name;
 		D3DXMATRIX bindPose;
 		D3DXMATRIX offset;
-		FbxMesh* meshNode = NULL;
 		int layer = 0;
+		FbxNode* node = NULL;
 		FbxBone* parent = NULL;
 		std::vector<FbxBone*> children;
 	};
@@ -77,7 +77,7 @@ namespace FBXHelper
 		FbxAnimationEvaluator();
 		~FbxAnimationEvaluator();
 
-		D3DXMATRIX Evaluator(FbxBone* bone, const char* animName, float second);
+		D3DXMATRIX Evaluator(FbxBone* bone, float second);
 	public:
 		void* mCurveData;
 		static D3DXMATRIX matIdentity;
@@ -85,14 +85,17 @@ namespace FBXHelper
 
 	bool BeginFBXHelper(const char* fileName);
 
-	void GetMesh(void** ppVB, int& v_stride, int& v_count, void** ppIB, int& i_stride, int& i_count);
-
 	FbxAnimationEvaluator* GetAnimationEvaluator();
 
 	FbxBoneMap* GetBoneMap();
 
 	FbxModelList* GetModelList();
+
 	D3DXMATRIX ToD3DMatrix(const FbxAMatrix& mat);
+
+	bool SetCurrentAnimation(const char* animName);
+
+	void UpdateSkeleton();
 
 	bool EndFBXHelper();
 }

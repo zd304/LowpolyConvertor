@@ -6,6 +6,9 @@
 Test::Test()
 {
 	mLastTime = 0;
+	mShowMesh = true;
+	mShowBone = false;
+	mRotSpeed = 0.0f;
 }
 
 Test::~Test()
@@ -27,7 +30,7 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 
 	mLastTime = timeGetTime();
 
-	FBXHelper::BeginFBXHelper("scorpid.FBX");
+	FBXHelper::BeginFBXHelper("humanoid.fbx");
 	FBXHelper::FbxModelList* models = FBXHelper::GetModelList();
 	mDisireVtxNums.Clear();
 	mMaxDisireVtxNums.Clear();
@@ -40,8 +43,8 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 
 	D3DXMATRIX matView, matProj;
 	D3DXMatrixPerspectiveFovLH(&matProj, D3DX_PI / 4.0f, 800.0f / 600.0f, 0.1f, 10000.0f);
-	D3DXMatrixLookAtLH(&matView, &D3DXVECTOR3(0.0f, 0.0f, -40.0f),
-		&D3DXVECTOR3(0.0f, 0.0f, 40.0f), &D3DXVECTOR3(0.0f, 1.0f, 0.0f));
+	D3DXMatrixLookAtLH(&matView, &D3DXVECTOR3(0.0f, 0.0f, -400.0f),
+		&D3DXVECTOR3(0.0f, 0.0f, 400.0f), &D3DXVECTOR3(0.0f, 1.0f, 0.0f));
 	D3DXMatrixScaling(&mMatWorld, -1.0f, -1.0f, -1.0f);
 
 	device->SetTransform(D3DTS_PROJECTION, &matProj);
@@ -59,13 +62,15 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 	material.Ambient = D3DXCOLOR(0.7f, 0.7f, 0.7f, 1.0f);
 	material.Diffuse = D3DXCOLOR(1.0f, 0.1f, 1.0f, 1.0f);
 	device->SetMaterial(&material);
-	rot = 0.0f;
+	mRotSpeed = 0.0f;
 
 	mMeshRenderer = new ProgressiveMeshRenderer(mDevice);
 	mMeshRenderer->Collapse(NULL, 1);
 
 	mBoneRenderer = new BoneRenderer(mDevice);
 	mBoneRenderer->BuildMesh();
+
+	FBXHelper::SetCurrentAnimation("run");
 }
 
 void Test::OnGUI()
@@ -130,6 +135,33 @@ void Test::OnGUI()
 		}
 	}
 
+	if (ImGui::CollapsingHeader(STU("渲染选项").c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::Indent(15.0f);
+		ImGui::Text(STU("旋转速度").c_str());
+		ImGui::SameLine();
+		ImGui::SliderFloat("##rotSpeed", &mRotSpeed, 0.0f, 10.0f);
+
+		ImGui::Checkbox(STU("显示模型").c_str(), &mShowMesh);
+		ImGui::Checkbox(STU("显示骨骼").c_str(), &mShowBone);
+		if (mShowBone && mBoneRenderer)
+		{
+			ImGui::Indent(10.0f);
+			float thick = mBoneRenderer->GetBoneThick();
+			ImGui::Text(STU("骨骼粗细").c_str());
+			ImGui::SameLine();
+			ImGui::DragFloat("##thick", &thick, 0.05f);
+			mBoneRenderer->SetBoneThick(thick);
+
+			bool bindpos = mBoneRenderer->GetShowAnimated();
+			ImGui::Checkbox(STU("显示BindPose").c_str(), &bindpos);
+			mBoneRenderer->SetShowAnimated(bindpos);
+
+			ImGui::Unindent(10.0f);
+		}
+		ImGui::Unindent(15.0f);
+	}
+
 	if (ImGui::CollapsingHeader(STU("模型信息").c_str(), ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		ImGui::Indent(15.0f);
@@ -146,13 +178,16 @@ void Test::OnUpdate()
 	float dt = (float)timeDelta * 0.001f;
 
 	D3DXMATRIX matRot;
-	D3DXMatrixRotationY(&matRot, dt);
+	D3DXMatrixRotationY(&matRot, dt * mRotSpeed);
 	D3DXMatrixMultiply(&mMatWorld, &mMatWorld, &matRot);
 	mDevice->SetTransform(D3DTS_WORLD, &mMatWorld);
 
-	mMeshRenderer->Render();
+	FBXHelper::UpdateSkeleton();
 
-	//mBoneRenderer->Render();
+	if (mShowMesh)
+		mMeshRenderer->Render();
+	if (mShowBone)
+		mBoneRenderer->Render();
 
 	mLastTime = curTime;
 }

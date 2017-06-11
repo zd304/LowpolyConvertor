@@ -29,8 +29,6 @@ struct CustomVertex_t
 ProgressiveMeshRenderer::ProgressiveMeshRenderer(IDirect3DDevice9* device)
 {
 	mDevice = device;
-	mLastTime = timeGetTime();
-	mAnimTime = 0.0f;
 
 	FBXHelper::FbxModelList* models = FBXHelper::GetModelList();
 	if (models == NULL)
@@ -215,15 +213,6 @@ void ProgressiveMeshRenderer::Clear()
 
 void ProgressiveMeshRenderer::Render()
 {
-	DWORD curTime = timeGetTime();
-	DWORD timeDelta = curTime - mLastTime;
-	mLastTime = curTime;
-
-	float dt = (float)timeDelta * 0.001f;
-	mAnimTime += dt;
-	if (mAnimTime > 10.0f)
-		mAnimTime = 0.0f;
-
 	mDevice->SetFVF(fvf);
 
 	FBXHelper::FbxAnimationEvaluator* animEvaluator = FBXHelper::GetAnimationEvaluator();
@@ -248,7 +237,6 @@ void ProgressiveMeshRenderer::Render()
 			for (int i = 0; i < bonemap->mBoneList.Count(); ++i)
 			{
 				FBXHelper::FbxBone* bone = bonemap->mBoneList[i];
-				bone->offset = animEvaluator->Evaluator(bone, "Take 001", mAnimTime);
 
 				FocusBoneWeight_t* fbw = mFBSkin[m]->skins[bone->name];
 				if (!fbw) continue;

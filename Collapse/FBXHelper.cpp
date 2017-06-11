@@ -8,6 +8,9 @@ namespace FBXHelper
 	FbxModelList* pMeshList = NULL;
 	FbxBoneMap* pSkeleton = NULL;
 	FbxAnimationEvaluator* pAnimEvaluator = NULL;
+	DWORD mLastTime = 0l;
+	float mAnimTime = 0.0f;
+	float mDuration = 0.0f;
 
 	FbxModelList::FbxModelList()
 	{
@@ -158,45 +161,11 @@ namespace FBXHelper
 		}
 	}
 
-	D3DXMATRIX FbxAnimationEvaluator::Evaluator(FbxBone* bone, const char* animName, float second)
+	D3DXMATRIX FbxAnimationEvaluator::Evaluator(FbxBone* bone, float second)
 	{
-		BoneAniamtion* p = (BoneAniamtion*)mCurveData;
-		BoneAniamtion::IT_BA itba = p->mBoneCurves.find(bone);
-		if (itba == p->mBoneCurves.end())
-			return matIdentity;
-		AnimationCurve* curve = itba->second;
-		AnimationCurve::IT_AC itac = curve->animCurves.find(animName);
-		if (itac == curve->animCurves.end())
-			return matIdentity;
-		LocalCurve* lclCurve = itac->second;
-
 		FbxTime t;
 		t.SetSecondDouble((double)second);
-
-//#define __LOCAL_EVALUATE__
-#ifdef __LOCAL_EVALUATE__
-		FbxVector4 translation(0.0, 0.0, 0.0);
-		FbxVector4 rotation(0.0, 0.0, 0.0);
-		FbxVector4 scaling(1.0f, 1.0, 1.0, 1.0);
-		if (lclCurve->translationX) translation.mData[0] = lclCurve->translationX->Evaluate(t);
-		if (lclCurve->translationY) translation.mData[1] = lclCurve->translationY->Evaluate(t);
-		if (lclCurve->translationZ) translation.mData[2] = lclCurve->translationZ->Evaluate(t);
-		//if (lclCurve->rotationX) rotation.mData[0] = lclCurve->rotationX->Evaluate(t);
-		//if (lclCurve->rotationY) rotation.mData[1] = lclCurve->rotationY->Evaluate(t);
-		//if (lclCurve->rotationZ) rotation.mData[2] = lclCurve->rotationZ->Evaluate(t);
-		//if (lclCurve->scaleX) scaling.mData[0] = lclCurve->scaleX->Evaluate(t);
-		//if (lclCurve->scaleY) scaling.mData[1] = lclCurve->scaleY->Evaluate(t);
-		//if (lclCurve->scaleZ) scaling.mData[2] = lclCurve->scaleZ->Evaluate(t);
-		FbxAMatrix mat = FbxAMatrix(translation, rotation, scaling);
-#else
-		FbxAMatrix mat = lclCurve->node->EvaluateGlobalTransform(t);
-#endif
-		//if (bone->meshNode)
-		//{
-		//	FbxNode* mn = bone->meshNode->GetNode();
-		//	FbxAMatrix matMesh = mn->EvaluateGlobalTransform(t);
-		//	mat = matMesh.Inverse() * mat;
-		//}
+		FbxAMatrix mat = bone->node->EvaluateGlobalTransform(t);
 		return ToD3DMatrix(mat);
 	}
 
@@ -275,6 +244,10 @@ namespace FBXHelper
 			pAnimEvaluator = new FbxAnimationEvaluator();
 		}
 
+		mLastTime = timeGetTime();
+		mAnimTime = 0.0f;
+		mDuration = 0.0f;
+
 		ProcessNode(pFBXScene->GetRootNode(), NULL, FbxNodeAttribute::eSkeleton);
 		ProcessNode(pFBXScene->GetRootNode(), NULL, FbxNodeAttribute::eMesh);
 
@@ -330,8 +303,6 @@ namespace FBXHelper
 					FbxVector4 vs = pMesh->GetNode()->GetGeometricScaling(FbxNode::eSourcePivot);
 					FbxAMatrix geometry(vt, vr, vs);
 					transformMatrix *= geometry;
-
-					bone->meshNode = pMesh;
 
 					matBindPose = transformMatrix.Inverse() * transformLinkMatrix;
 					bone->bindPose = ToD3DMatrix(matBindPose);
@@ -427,6 +398,7 @@ namespace FBXHelper
 		bone->id = pSkeleton->mBones.size();
 		bone->name = pNode->GetName();
 		bone->layer = 0;
+		bone->node = pNode;
 
 		if (parent)
 		{
@@ -644,20 +616,6 @@ namespace FBXHelper
 		}
 	}
 
-	void GetMesh(void** ppVB, int& v_stride, int& v_count, void** ppIB, int& i_stride, int& i_count)
-	{
-		if (!pMeshList) return;
-		if (pMeshList->mMeshes.Count() == 0)
-			return;
-		FbxModel* mesh = pMeshList->mMeshes[0];
-		(*ppVB) = mesh->pVB;
-		v_stride = sizeof(FbxMeshVertex_Tmp);
-		v_count = mesh->nVertexCount;
-		(*ppIB) = mesh->pIB;
-		i_stride = sizeof(unsigned int);
-		i_count = mesh->nIndexCount;
-	}
-
 	FbxAnimationEvaluator* GetAnimationEvaluator()
 	{
 		return pAnimEvaluator;
@@ -673,9 +631,54 @@ namespace FBXHelper
 		return pMeshList;
 	}
 
+	bool SetCurrentAnimation(const char* animName)
+	{
+		int numStacks = pFBXScene->GetSrcObjectCount<FbxAnimStack>();
+		for (int i = 0; i < numStacks; ++i)
+		{
+			FbxAnimStack* pAnimStack = pFBXScene->GetSrcObject<FbxAnimStack>(i);
+			if (!pAnimStack) continue;
+			std::string name = pAnimStack->GetName();
+			if (name == animName)
+			{
+				pFBXScene->SetCurrentAnimationStack(pAnimStack);
+				FbxTimeSpan span = pAnimStack->GetLocalTimeSpan();
+				mDuration = (float)span.GetDuration().GetSecondDouble();
+				return true;
+			}
+		}
+		return false;
+	}
+
+	void UpdateSkeleton()
+	{
+		if (!pSkeleton || !pAnimEvaluator)
+			return;
+		DWORD curTime = timeGetTime();
+		DWORD timeDelta = curTime - mLastTime;
+		mLastTime = curTime;
+
+		float dt = (float)timeDelta * 0.001f;
+		mAnimTime += dt;
+		if (mAnimTime > mDuration)
+			mAnimTime = 0.0f;
+
+		FbxBoneMap* bonemap = pSkeleton;
+		FBXHelper::FbxAnimationEvaluator* animEvaluator = pAnimEvaluator;
+
+		for (int i = 0; i < bonemap->mBoneList.Count(); ++i)
+		{
+			FBXHelper::FbxBone* bone = bonemap->mBoneList[i];
+			bone->offset = animEvaluator->Evaluator(bone, mAnimTime);
+		}
+	}
+
 	bool EndFBXHelper()
 	{
 		bool rst = true;
+		mLastTime = 0l;
+		mAnimTime = 0.0f;
+		mDuration = 0.0f;
 		DestroySdkObjects(pFBXSDKManager, rst);
 		pFBXSDKManager = NULL;
 		pFBXScene = NULL;
