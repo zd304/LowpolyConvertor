@@ -38,6 +38,10 @@ public:
 	List<int> mMaxDisireVtxNums;
 	bool mShowMesh;
 	bool mShowBone;
+	int mCurrentAnimIndex;
+	float mCameraDistance;
+	float mCameraHeight;
+	float mCameraX;
 };
 
 #endif

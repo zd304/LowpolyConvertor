@@ -78,22 +78,21 @@ namespace FBXHelper
 		~FbxAnimationEvaluator();
 
 		D3DXMATRIX Evaluator(FbxBone* bone, float second);
-	public:
-		void* mCurveData;
-		static D3DXMATRIX matIdentity;
 	};
 
 	bool BeginFBXHelper(const char* fileName);
-
-	FbxAnimationEvaluator* GetAnimationEvaluator();
 
 	FbxBoneMap* GetBoneMap();
 
 	FbxModelList* GetModelList();
 
+	void GetBox(D3DXVECTOR3& max, D3DXVECTOR3& min);
+
 	D3DXMATRIX ToD3DMatrix(const FbxAMatrix& mat);
 
 	bool SetCurrentAnimation(const char* animName);
+
+	bool GetAniamtionNames(List<const char*>& names);
 
 	void UpdateSkeleton();
 

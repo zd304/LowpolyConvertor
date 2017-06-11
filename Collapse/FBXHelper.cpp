@@ -11,6 +11,17 @@ namespace FBXHelper
 	DWORD mLastTime = 0l;
 	float mAnimTime = 0.0f;
 	float mDuration = 0.0f;
+	D3DXVECTOR3 boxMax;
+	D3DXVECTOR3 boxMin;
+
+	static D3DXVECTOR3 Vec3One(1.0f, 1.0f, 1.0f);
+	static D3DXVECTOR3 Vec3Zero(0.0f, 0.0f, 0.0f);
+	static D3DXMATRIX MatIdentity = D3DXMATRIX(
+		1.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f
+		);
 
 	FbxModelList::FbxModelList()
 	{
@@ -71,51 +82,9 @@ namespace FBXHelper
 		mBoneList.Clear();
 	}
 
-	class AnimationCurve;
-	struct LocalCurve;
-
-	class BoneAniamtion
-	{
-	public:
-		BoneAniamtion();
-		~BoneAniamtion();
-	public:
-		typedef std::map<FbxBone*, AnimationCurve*>::iterator IT_BA;
-		std::map<FbxBone*, AnimationCurve*> mBoneCurves;
-	};
-
-	class AnimationCurve
-	{
-	public:
-		AnimationCurve();
-		~AnimationCurve();
-	public:
-		typedef std::map<std::string, LocalCurve*>::iterator IT_AC;
-		std::map<std::string, LocalCurve*> animCurves;
-	};
-
-	struct LocalCurve
-	{
-		FbxAnimCurve* translationX = NULL;
-		FbxAnimCurve* translationY = NULL;
-		FbxAnimCurve* translationZ = NULL;
-		FbxAnimCurve* rotationX = NULL;
-		FbxAnimCurve* rotationY = NULL;
-		FbxAnimCurve* rotationZ = NULL;
-		FbxAnimCurve* scaleX = NULL;
-		FbxAnimCurve* scaleY = NULL;
-		FbxAnimCurve* scaleZ = NULL;
-		FbxNode* node = NULL;
-	};
-
 	D3DXMATRIX ToD3DMatrix(const FbxAMatrix& mat)
 	{
 		D3DXMATRIX mm;
-			//= D3DXMATRIX(
-			//(float)mat.Get(0, 0), (float)mat.Get(0, 1), (float)mat.Get(0, 2), (float)mat.Get(0, 3),
-			//(float)mat.Get(1, 0), (float)mat.Get(1, 1), (float)mat.Get(1, 2), (float)mat.Get(1, 3),
-			//(float)mat.Get(2, 0), (float)mat.Get(2, 1), (float)mat.Get(2, 2), (float)mat.Get(2, 3),
-			//(float)mat.Get(3, 0), (float)mat.Get(3, 1), (float)mat.Get(3, 2), (float)mat.Get(3, 3));
 		for (int i = 0; i < 4; ++i)
 		{
 			for (int j = 0; j < 4; ++j)
@@ -139,26 +108,12 @@ namespace FBXHelper
 		return mm;
 	}
 
-	D3DXMATRIX FbxAnimationEvaluator::matIdentity = D3DXMATRIX(
-		1.0f, 0.0f, 0.0f, 0.0f,
-		0.0f, 1.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, 0.0f, 1.0f
-		);
-
 	FbxAnimationEvaluator::FbxAnimationEvaluator()
 	{
-		mCurveData = new BoneAniamtion();
 	}
 
 	FbxAnimationEvaluator::~FbxAnimationEvaluator()
 	{
-		if (mCurveData)
-		{
-			BoneAniamtion* p = (BoneAniamtion*)mCurveData;
-			delete p;
-			mCurveData = NULL;
-		}
 	}
 
 	D3DXMATRIX FbxAnimationEvaluator::Evaluator(FbxBone* bone, float second)
@@ -169,42 +124,21 @@ namespace FBXHelper
 		return ToD3DMatrix(mat);
 	}
 
-	BoneAniamtion::BoneAniamtion()
+	void UpdateBox(const D3DXVECTOR3& v)
 	{
-		mBoneCurves.clear();
-	}
+		if (boxMax.x < v.x)
+			boxMax.x = v.x;
+		if (boxMax.y < v.y)
+			boxMax.y = v.y;
+		if (boxMax.z < v.z)
+			boxMax.z = v.z;
 
-	BoneAniamtion::~BoneAniamtion()
-	{
-		std::map<FbxBone*, AnimationCurve*>::iterator it;
-		for (it = mBoneCurves.begin(); it != mBoneCurves.end(); ++it)
-		{
-			AnimationCurve* anim = it->second;
-			if (anim)
-			{
-				delete anim;
-			}
-		}
-		mBoneCurves.clear();
-	}
-
-	AnimationCurve::AnimationCurve()
-	{
-		animCurves.clear();
-	}
-
-	AnimationCurve::~AnimationCurve()
-	{
-		std::map<std::string, LocalCurve*>::iterator it;
-		for (it = animCurves.begin(); it != animCurves.end(); ++it)
-		{
-			LocalCurve* curves = it->second;
-			if (curves)
-			{
-				delete curves;
-			}
-		}
-		animCurves.clear();
+		if (boxMin.x > v.x)
+			boxMin.x = v.x;
+		if (boxMin.y > v.y)
+			boxMin.y = v.y;
+		if (boxMin.z > v.z)
+			boxMin.z = v.z;
 	}
 
 	void ProcessNode(FbxNode* pNode, FbxNode* pParent = NULL, int mask = -1);
@@ -214,6 +148,13 @@ namespace FBXHelper
 		InitializeSdkObjects(pFBXSDKManager, pFBXScene);
 
 		bool rst = LoadScene(pFBXSDKManager, pFBXScene, fileName);
+
+		boxMax.x = FLT_MIN;
+		boxMax.y = FLT_MIN;
+		boxMax.z = FLT_MIN;
+		boxMin.x = FLT_MAX;
+		boxMin.y = FLT_MAX;
+		boxMin.z = FLT_MAX;
 
 		if (rst == false)
 		{
@@ -238,7 +179,7 @@ namespace FBXHelper
 
 		pMeshList = new FbxModelList();
 
-		int numStacks = pFBXScene->GetSrcObjectCount<fbxsdk_2015_1::FbxAnimStack>();
+		int numStacks = pFBXScene->GetSrcObjectCount<FbxAnimStack>();
 		if (numStacks > 0)
 		{
 			pAnimEvaluator = new FbxAnimationEvaluator();
@@ -285,15 +226,6 @@ namespace FBXHelper
 					FbxBone* bone = itbm->second;
 					FbxAMatrix transformLinkMatrix, transformMatrix, matBindPose;
 
-					std::string txt;
-					for (int ll = 0; ll < bone->layer; ++ll)
-					{
-						txt += "  ";
-					}
-					txt += bone->name;
-					txt += "\n";
-					printf(txt.c_str());
-
 					// ボーンの初期姿勢を取得;
 					cluster->GetTransformLinkMatrix(transformLinkMatrix);
 
@@ -328,58 +260,6 @@ namespace FBXHelper
 		return skinInfo;
 	}
 
-	void ProcessAnimation(FbxNode* pNode, FbxBone* bone)
-	{
-		if (!pAnimEvaluator)
-			return;
-		BoneAniamtion* boneAnim = (BoneAniamtion*)pAnimEvaluator->mCurveData;
-		AnimationCurve* animCurve = NULL;
-		BoneAniamtion::IT_BA itba = boneAnim->mBoneCurves.find(bone);
-		if (itba == boneAnim->mBoneCurves.end())
-		{
-			animCurve = new AnimationCurve();
-			boneAnim->mBoneCurves[bone] = animCurve;
-		}
-		else
-		{
-			animCurve = boneAnim->mBoneCurves[bone];
-		}
-		if (animCurve == NULL)
-			return;
-
-		int numStacks = pFBXScene->GetSrcObjectCount<fbxsdk_2015_1::FbxAnimStack>();
-		for (int i = 0; i < numStacks; ++i)
-		{
-			fbxsdk_2015_1::FbxAnimStack* pAnimStack = pFBXScene->GetSrcObject<fbxsdk_2015_1::FbxAnimStack>(i);
-			std::string animName = pAnimStack->GetName();
-
-			int numAnimLayers = pAnimStack->GetMemberCount<FbxAnimLayer>();
-			//for (int j = 0; j < numAnimLayers; ++j)
-			//{
-			//	FbxAnimLayer* pLayer = pAnimStack->GetMember<FbxAnimLayer>(j);
-			//}
-			// 暂不考虑Blend;
-			if (numAnimLayers > 0)
-			{
-				FbxAnimLayer* pLayer = pAnimStack->GetMember<FbxAnimLayer>(0);
-				if (!pLayer)
-					return;
-				LocalCurve* curves = new LocalCurve();
-				curves->translationX = pNode->LclTranslation.GetCurve(pLayer, FBXSDK_CURVENODE_COMPONENT_X);
-				curves->translationY = pNode->LclTranslation.GetCurve(pLayer, FBXSDK_CURVENODE_COMPONENT_Y);
-				curves->translationZ = pNode->LclTranslation.GetCurve(pLayer, FBXSDK_CURVENODE_COMPONENT_Z);
-				curves->rotationX = pNode->LclRotation.GetCurve(pLayer, FBXSDK_CURVENODE_COMPONENT_X);
-				curves->rotationY = pNode->LclRotation.GetCurve(pLayer, FBXSDK_CURVENODE_COMPONENT_Y);
-				curves->rotationZ = pNode->LclRotation.GetCurve(pLayer, FBXSDK_CURVENODE_COMPONENT_Z);
-				curves->scaleX = pNode->LclScaling.GetCurve(pLayer, FBXSDK_CURVENODE_COMPONENT_X);
-				curves->scaleY = pNode->LclScaling.GetCurve(pLayer, FBXSDK_CURVENODE_COMPONENT_Y);
-				curves->scaleZ = pNode->LclScaling.GetCurve(pLayer, FBXSDK_CURVENODE_COMPONENT_Z);
-				curves->node = pNode;
-				animCurve->animCurves[animName] = curves;
-			}
-		}
-	}
-
 	void ProcessSkeleton(FbxNode* pNode, FbxNode* pParent)
 	{
 		FbxNode* parent = NULL;
@@ -411,8 +291,6 @@ namespace FBXHelper
 		D3DXMatrixIdentity(&bone->bindPose);
 		pSkeleton->mBones[bone->name] = bone;
 		pSkeleton->mBoneList.Add(bone);
-
-		ProcessAnimation(pNode, bone);
 	}
 
 	void ProcessMesh(FbxNode* pNode)
@@ -497,6 +375,7 @@ namespace FBXHelper
 				vertex->pos.x = (float)currentVertex[0];
 				vertex->pos.y = (float)currentVertex[1];
 				vertex->pos.z = (float)currentVertex[2];
+				UpdateBox(vertex->pos);
 
 				if (hasNormal)
 				{
@@ -556,6 +435,7 @@ namespace FBXHelper
 					vertex->pos.x = (float)currentVertex[0];
 					vertex->pos.y = (float)currentVertex[1];
 					vertex->pos.z = (float)currentVertex[2];
+					UpdateBox(vertex->pos);
 
 					if (hasNormal)
 					{
@@ -616,11 +496,6 @@ namespace FBXHelper
 		}
 	}
 
-	FbxAnimationEvaluator* GetAnimationEvaluator()
-	{
-		return pAnimEvaluator;
-	}
-
 	FbxBoneMap* GetBoneMap()
 	{
 		return pSkeleton;
@@ -629,6 +504,12 @@ namespace FBXHelper
 	FbxModelList* GetModelList()
 	{
 		return pMeshList;
+	}
+
+	void GetBox(D3DXVECTOR3& max, D3DXVECTOR3& min)
+	{
+		max = boxMax;
+		min = boxMin;
 	}
 
 	bool SetCurrentAnimation(const char* animName)
@@ -648,6 +529,20 @@ namespace FBXHelper
 			}
 		}
 		return false;
+	}
+
+	bool GetAniamtionNames(List<const char*>& names)
+	{
+		bool rst = false;
+		int numStacks = pFBXScene->GetSrcObjectCount<FbxAnimStack>();
+		for (int i = 0; i < numStacks; ++i)
+		{
+			FbxAnimStack* pAnimStack = pFBXScene->GetSrcObject<FbxAnimStack>(i);
+			if (!pAnimStack) continue;
+			names.Add(pAnimStack->GetName());
+			rst = true;
+		}
+		return rst;
 	}
 
 	void UpdateSkeleton()
@@ -679,6 +574,12 @@ namespace FBXHelper
 		mLastTime = 0l;
 		mAnimTime = 0.0f;
 		mDuration = 0.0f;
+		boxMax.x = FLT_MIN;
+		boxMax.y = FLT_MIN;
+		boxMax.z = FLT_MIN;
+		boxMin.x = FLT_MAX;
+		boxMin.y = FLT_MAX;
+		boxMin.z = FLT_MAX;
 		DestroySdkObjects(pFBXSDKManager, rst);
 		pFBXSDKManager = NULL;
 		pFBXScene = NULL;

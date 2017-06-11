@@ -215,8 +215,6 @@ void ProgressiveMeshRenderer::Render()
 {
 	mDevice->SetFVF(fvf);
 
-	FBXHelper::FbxAnimationEvaluator* animEvaluator = FBXHelper::GetAnimationEvaluator();
-
 	for (int m = 0; m < mMeshes.Count(); ++m)
 	{
 		FBXHelper::FbxBoneMap* bonemap = FBXHelper::GetBoneMap();

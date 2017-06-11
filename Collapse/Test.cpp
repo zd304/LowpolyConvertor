@@ -9,6 +9,10 @@ Test::Test()
 	mShowMesh = true;
 	mShowBone = false;
 	mRotSpeed = 0.0f;
+	mCurrentAnimIndex = 0;
+	mCameraDistance = 400.0f;
+	mCameraHeight = 400.0f;
+	mCameraX = 0.0f;
 }
 
 Test::~Test()
@@ -30,21 +34,10 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 
 	mLastTime = timeGetTime();
 
-	FBXHelper::BeginFBXHelper("humanoid.fbx");
-	FBXHelper::FbxModelList* models = FBXHelper::GetModelList();
-	mDisireVtxNums.Clear();
-	mMaxDisireVtxNums.Clear();
-	for (int i = 0; i < models->mMeshes.Count(); ++i)
-	{
-		FBXHelper::FbxModel* model = models->mMeshes[i];
-		mDisireVtxNums.Add(model->nVertexCount);
-		mMaxDisireVtxNums.Add(model->nVertexCount);
-	}
-
 	D3DXMATRIX matView, matProj;
-	D3DXMatrixPerspectiveFovLH(&matProj, D3DX_PI / 4.0f, 800.0f / 600.0f, 0.1f, 10000.0f);
-	D3DXMatrixLookAtLH(&matView, &D3DXVECTOR3(0.0f, 0.0f, -400.0f),
-		&D3DXVECTOR3(0.0f, 0.0f, 400.0f), &D3DXVECTOR3(0.0f, 1.0f, 0.0f));
+	D3DXMatrixPerspectiveFovLH(&matProj, D3DX_PI / 4.0f, (float)mWidth / (float)mHeight, 0.1f, 10000.0f);
+	D3DXMatrixLookAtLH(&matView, &D3DXVECTOR3(mCameraX, mCameraHeight, mCameraDistance),
+		&D3DXVECTOR3(0.0f, 0.0f, 0.0f), &D3DXVECTOR3(0.0f, 1.0f, 0.0f));
 	D3DXMatrixScaling(&mMatWorld, -1.0f, -1.0f, -1.0f);
 
 	device->SetTransform(D3DTS_PROJECTION, &matProj);
@@ -64,13 +57,40 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 	device->SetMaterial(&material);
 	mRotSpeed = 0.0f;
 
+	FBXHelper::BeginFBXHelper("humanoid.fbx");
+	FBXHelper::FbxModelList* models = FBXHelper::GetModelList();
+	mDisireVtxNums.Clear();
+	mMaxDisireVtxNums.Clear();
+	for (int i = 0; i < models->mMeshes.Count(); ++i)
+	{
+		FBXHelper::FbxModel* model = models->mMeshes[i];
+		mDisireVtxNums.Add(model->nVertexCount);
+		mMaxDisireVtxNums.Add(model->nVertexCount);
+	}
+
+	D3DXVECTOR3 max, min;
+	FBXHelper::GetBox(max, min);
+	float boxSize = D3DXVec3Length(&(max - min));
+	mCameraDistance = 3.0f * boxSize;
+	mCameraHeight = 2.0f * boxSize;
+	mCameraX = boxSize;
+	D3DXMatrixLookAtLH(&matView, &D3DXVECTOR3(mCameraX, mCameraHeight, mCameraDistance),
+		&D3DXVECTOR3(mCameraX, 0.0f, 0.0f), &D3DXVECTOR3(0.0f, 1.0f, 0.0f));
+	device->SetTransform(D3DTS_VIEW, &matView);
+
 	mMeshRenderer = new ProgressiveMeshRenderer(mDevice);
 	mMeshRenderer->Collapse(NULL, 1);
 
 	mBoneRenderer = new BoneRenderer(mDevice);
+	mBoneRenderer->SetBoneThick(boxSize * 0.01f);
 	mBoneRenderer->BuildMesh();
 
-	FBXHelper::SetCurrentAnimation("run");
+	List<const char*> names;
+	if (FBXHelper::GetAniamtionNames(names))
+	{
+		mCurrentAnimIndex = 0;
+		FBXHelper::SetCurrentAnimation(names[mCurrentAnimIndex]);
+	}
 }
 
 void Test::OnGUI()
@@ -141,6 +161,28 @@ void Test::OnGUI()
 		ImGui::Text(STU("旋转速度").c_str());
 		ImGui::SameLine();
 		ImGui::SliderFloat("##rotSpeed", &mRotSpeed, 0.0f, 10.0f);
+		ImGui::Text(STU("相机距离").c_str());
+		ImGui::SameLine();
+		float camDist = mCameraDistance;
+		ImGui::DragFloat("##mCameraDistance", &camDist);
+		ImGui::Text(STU("相机高度").c_str());
+		ImGui::SameLine();
+		float camHeight = mCameraHeight;
+		ImGui::DragFloat("##mCameraHeight", &camHeight);
+		ImGui::Text(STU("相机位置").c_str());
+		ImGui::SameLine();
+		float camX = mCameraX;
+		ImGui::DragFloat("##mCameraX", &camX);
+		if (camDist != mCameraDistance || camHeight != mCameraHeight || camX != mCameraX)
+		{
+			mCameraDistance = camDist;
+			mCameraHeight = camHeight;
+			mCameraX = camX;
+			D3DXMATRIX matView;
+			D3DXMatrixLookAtLH(&matView, &D3DXVECTOR3(mCameraX, mCameraHeight, mCameraDistance),
+				&D3DXVECTOR3(mCameraX, 0.0f, 0.0f), &D3DXVECTOR3(0.0f, 1.0f, 0.0f));
+			mDevice->SetTransform(D3DTS_VIEW, &matView);
+		}
 
 		ImGui::Checkbox(STU("显示模型").c_str(), &mShowMesh);
 		ImGui::Checkbox(STU("显示骨骼").c_str(), &mShowBone);
@@ -154,10 +196,27 @@ void Test::OnGUI()
 			mBoneRenderer->SetBoneThick(thick);
 
 			bool bindpos = mBoneRenderer->GetShowAnimated();
-			ImGui::Checkbox(STU("显示BindPose").c_str(), &bindpos);
+			ImGui::Checkbox(STU("显示动画").c_str(), &bindpos);
 			mBoneRenderer->SetShowAnimated(bindpos);
 
 			ImGui::Unindent(10.0f);
+		}
+		if (mMeshRenderer->mIsSkinnedMesh)
+		{
+			List<const char*> names;
+			if (FBXHelper::GetAniamtionNames(names))
+			{
+				int curAnim = mCurrentAnimIndex;
+				ImGui::Text(STU("播放动画").c_str());
+				ImGui::SameLine();
+				ImGui::Combo("##animNames", &curAnim, &(names[0]), names.Count());
+				if (curAnim != mCurrentAnimIndex)
+				{
+					mCurrentAnimIndex = curAnim;
+					const char* name = names[curAnim];
+					FBXHelper::SetCurrentAnimation(name);
+				}
+			}
 		}
 		ImGui::Unindent(15.0f);
 	}
@@ -194,8 +253,9 @@ void Test::OnUpdate()
 
 void Test::OnQuit()
 {
-	if (mMeshRenderer)
-		delete mMeshRenderer;
+	mDisireVtxNums.Clear();
+	mMaxDisireVtxNums.Clear();
+	SAFE_DELETE(mMeshRenderer);
 	SAFE_DELETE(mBoneRenderer);
 	FBXHelper::EndFBXHelper();
 }
