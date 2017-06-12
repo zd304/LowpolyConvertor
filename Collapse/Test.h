@@ -42,6 +42,7 @@ public:
 	float mCameraDistance;
 	float mCameraHeight;
 	float mCameraX;
+	bool mLowpolyStyle;
 };
 
 #endif

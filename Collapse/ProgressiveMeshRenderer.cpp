@@ -156,11 +156,7 @@ void ProgressiveMeshRenderer::Collapse(int* vtxnums, int meshCount, bool seperat
 			}
 			BindVertexBuffer bvb;
 			bvb.vb = pvb_t;
-			bvb.count = buffer->v_count;
-			if (seperation)
-			{
-				bvb.count = buffer->i_count;
-			}
+			bvb.count = vertexNum;
 
 			mBindVertexBuffer.Add(bvb);
 			mFBSkin.Add(skin);
@@ -197,7 +193,7 @@ void ProgressiveMeshRenderer::Collapse(int* vtxnums, int meshCount, bool seperat
 			pMesh->UnlockIndexBuffer();
 			void* vb = NULL;
 			pMesh->LockVertexBuffer(0, (void**)&vb);
-			memcpy(vb, pvb_t, buffer->v_count * sizeof(CustomVertex_t));
+			memcpy(vb, pvb_t, vertexNum * sizeof(CustomVertex_t));
 			pMesh->UnlockVertexBuffer();
 
 			pvb_t = NULL;

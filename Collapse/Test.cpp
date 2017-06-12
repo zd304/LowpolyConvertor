@@ -13,6 +13,7 @@ Test::Test()
 	mCameraDistance = 400.0f;
 	mCameraHeight = 400.0f;
 	mCameraX = 0.0f;
+	mLowpolyStyle = false;
 }
 
 Test::~Test()
@@ -144,12 +145,12 @@ void Test::OnGUI()
 				collapseParam[i] = mDisireVtxNums[i];
 			}
 
-			ImGui::PushID(mImGuiID++);
-			if (ImGui::Button(STU("Ì®Ëú").c_str(), ImVec2(150, 30)))
+			if (ImGui::Button(STU("Ì®Ëú").c_str(), ImVec2(100, 30)))
 			{
-				mMeshRenderer->Collapse(collapseParam, models->mMeshes.Count(), true);
+				mMeshRenderer->Collapse(collapseParam, models->mMeshes.Count(), mLowpolyStyle);
 			}
-			ImGui::PopID();
+			ImGui::SameLine();
+			ImGui::Checkbox(STU("lowpoly·ç¸ñ").c_str(), &mLowpolyStyle);
 			delete[] collapseParam;
 			ImGui::Unindent(15.0f);
 		}
@@ -243,7 +244,7 @@ void Test::OnUpdate()
 
 	D3DLIGHT9 light;
 	mDevice->GetLight(0, &light);
-	light.Direction = D3DXVECTOR3(1.0f, 1.0f, 1.0f);
+	light.Direction = D3DXVECTOR3(1.0f, 1.0f, -1.0f);
 	mDevice->SetLight(0, &light);
 
 	FBXHelper::UpdateSkeleton();
