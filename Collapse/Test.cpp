@@ -58,7 +58,7 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 	device->SetMaterial(&material);
 	mRotSpeed = 0.0f;
 
-	FBXHelper::BeginFBXHelper("scorpid.FBX");
+	FBXHelper::BeginFBXHelper("goblin-sapper.FBX");
 	FBXHelper::FbxModelList* models = FBXHelper::GetModelList();
 	mDisireVtxNums.Clear();
 	mMaxDisireVtxNums.Clear();

@@ -12,6 +12,8 @@ namespace SkinCollapse
 			return cost;
 		FBXHelper::FbxBoneWeight* pbw1 = *bw1;
 		FBXHelper::FbxBoneWeight* pbw2 = *bw2;
+		if (pbw1 == NULL || pbw2 == NULL)
+			return cost;
 		for (int i = 0; i < pbw1->boneName.Count(); ++i)
 		{
 			for (int j = 0; j < pbw2->boneName.Count(); ++j)

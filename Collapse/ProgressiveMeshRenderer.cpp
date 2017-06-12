@@ -141,6 +141,7 @@ void ProgressiveMeshRenderer::Collapse(int* vtxnums, int meshCount, bool seperat
 				// 把关注点信息的蒙皮信息改为关注骨骼的蒙皮信息，方便渲染;
 				if (!mIsSkinnedMesh) continue;
 				FBXHelper::FbxBoneWeight* bw = (FBXHelper::FbxBoneWeight*)vtx->skin;
+				if (!bw) continue;
 				for (int k = 0; k < bw->boneName.Count(); ++k)
 				{
 					std::string& sName = bw->boneName[k];
