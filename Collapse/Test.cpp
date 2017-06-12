@@ -244,7 +244,7 @@ void Test::OnUpdate()
 
 	D3DLIGHT9 light;
 	mDevice->GetLight(0, &light);
-	light.Direction = D3DXVECTOR3(1.0f, 1.0f, -1.0f);
+	light.Direction = D3DXVECTOR3(1.0f, -1.0f, 1.0f);
 	mDevice->SetLight(0, &light);
 
 	FBXHelper::UpdateSkeleton();

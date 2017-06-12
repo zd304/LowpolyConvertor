@@ -267,6 +267,7 @@ void ProgressiveMeshRenderer::Render()
 			for (int i = 0; i < bvb.count; ++i)
 			{
 				vertices[i].pos = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
+				vertices[i].normal = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
 			}
 
 			for (int i = 0; i < bonemap->mBoneList.Count(); ++i)
@@ -292,6 +293,13 @@ void ProgressiveMeshRenderer::Render()
 					vertices[idx].pos.x += vec.x;
 					vertices[idx].pos.y += vec.y;
 					vertices[idx].pos.z += vec.z;
+
+					D3DXVECTOR3 vn;
+					D3DXVec3TransformNormal(&vn, &cv.normal, &mat);
+					vn = vn * (float)weight;
+					vertices[idx].normal.x += vn.x;
+					vertices[idx].normal.y += vn.y;
+					vertices[idx].normal.z += vn.z;
 				}
 			}
 
