@@ -53,3 +53,20 @@ std::string STU(const std::string& str)
 
 	return retStr;
 }
+
+void StringReplace(std::string &strBase, const std::string& strSrc, const std::string& strDes)
+{
+	std::string::size_type pos = 0;
+	std::string::size_type srcLen = strSrc.size();
+	std::string::size_type desLen = strDes.size();
+	pos = strBase.find(strSrc, pos);
+	while ((pos != std::string::npos))
+	{
+		strBase.replace(pos, srcLen, strDes);
+		pos = strBase.find(strSrc, (pos + desLen));
+	}
+}
+
+ImTextureID Global::mFolderTexID = NULL;
+ImTextureID Global::mFileTexID = NULL;
+ImTextureID Global::mDiskTexID = NULL;

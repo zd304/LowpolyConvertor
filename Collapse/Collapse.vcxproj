@@ -72,6 +72,7 @@
     <ClCompile Include="Collapse.cpp" />
     <ClCompile Include="FBXCommon.cpp" />
     <ClCompile Include="FBXHelper.cpp" />
+    <ClCompile Include="FileDialog.cpp" />
     <ClCompile Include="imgui\imgui.cpp" />
     <ClCompile Include="imgui\imgui_demo.cpp" />
     <ClCompile Include="imgui\imgui_draw.cpp" />
@@ -87,6 +88,7 @@
     <ClInclude Include="Collapse.h" />
     <ClInclude Include="FBXCommon.h" />
     <ClInclude Include="FBXHelper.h" />
+    <ClInclude Include="FileDialog.h" />
     <ClInclude Include="imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui.h" />
     <ClInclude Include="imgui\imgui_internal.h" />

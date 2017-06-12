@@ -21,6 +21,55 @@ Test::~Test()
 	mLastTime = 0;
 }
 
+void LoadTextures(IDirect3DDevice9* device)
+{
+	LPDIRECT3DTEXTURE9 p = NULL;
+	D3DXCreateTextureFromFileEx(device, "disk.png",
+		D3DX_FROM_FILE,
+		D3DX_FROM_FILE,
+		D3DX_DEFAULT,
+		0,
+		D3DFMT_A8R8G8B8,
+		D3DPOOL_MANAGED,
+		D3DX_FILTER_TRIANGLE,
+		D3DX_FILTER_TRIANGLE,
+		D3DCOLOR_RGBA(0, 0, 0, 255),
+		NULL,
+		NULL,
+		&p);
+	Global::mDiskTexID = (ImTextureID)p;
+	p = NULL;
+	D3DXCreateTextureFromFileEx(device, "folder.png",
+		D3DX_FROM_FILE,
+		D3DX_FROM_FILE,
+		D3DX_DEFAULT,
+		0,
+		D3DFMT_A8R8G8B8,
+		D3DPOOL_MANAGED,
+		D3DX_FILTER_TRIANGLE,
+		D3DX_FILTER_TRIANGLE,
+		D3DCOLOR_RGBA(0, 0, 0, 255),
+		NULL,
+		NULL,
+		&p);
+	Global::mFolderTexID = (ImTextureID)p;
+	p = NULL;
+	D3DXCreateTextureFromFileEx(device, "file.png",
+		D3DX_FROM_FILE,
+		D3DX_FROM_FILE,
+		D3DX_DEFAULT,
+		0,
+		D3DFMT_A8R8G8B8,
+		D3DPOOL_MANAGED,
+		D3DX_FILTER_TRIANGLE,
+		D3DX_FILTER_TRIANGLE,
+		D3DCOLOR_RGBA(0, 0, 0, 255),
+		NULL,
+		NULL,
+		&p);
+	Global::mFileTexID = (ImTextureID)p;
+}
+
 void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 {
 	mDevice = device;
@@ -32,6 +81,16 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 
 	ImGuiIO& io = ImGui::GetIO();
 	io.Fonts->AddFontFromFileTTF("msyh.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesChinese());
+	LoadTextures(device);
+
+	char szPath[MAX_PATH] = { 0 };
+	GetCurrentDirectory(MAX_PATH, szPath);
+	std::string sCurPath = szPath;
+	sCurPath = sCurPath.append("\\");
+
+	fdOpen.ext = "fbx";
+	fdOpen.dlgName = "打开模型";
+	fdOpen.SetDefaultDirectory(sCurPath);
 
 	mLastTime = timeGetTime();
 
@@ -57,8 +116,13 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 	material.Diffuse = D3DXCOLOR(1.0f, 0.1f, 1.0f, 1.0f);
 	device->SetMaterial(&material);
 	mRotSpeed = 0.0f;
+}
 
-	FBXHelper::BeginFBXHelper("scorpid.FBX");
+void Test::OpenFile(const char* fileName)
+{
+	OnQuit();
+
+	FBXHelper::BeginFBXHelper(fileName);
 	FBXHelper::FbxModelList* models = FBXHelper::GetModelList();
 	mDisireVtxNums.Clear();
 	mMaxDisireVtxNums.Clear();
@@ -75,9 +139,10 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 	mCameraDistance = 3.0f * boxSize;
 	mCameraHeight = 2.0f * boxSize;
 	mCameraX = boxSize;
+	D3DXMATRIX matView;
 	D3DXMatrixLookAtLH(&matView, &D3DXVECTOR3(mCameraX, mCameraHeight, mCameraDistance),
 		&D3DXVECTOR3(mCameraX, 0.0f, 0.0f), &D3DXVECTOR3(0.0f, 1.0f, 0.0f));
-	device->SetTransform(D3DTS_VIEW, &matView);
+	mDevice->SetTransform(D3DTS_VIEW, &matView);
 
 	mMeshRenderer = new ProgressiveMeshRenderer(mDevice);
 	mMeshRenderer->Collapse(NULL, 1);
@@ -96,34 +161,49 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 
 void Test::OnGUI()
 {
-	FBXHelper::FbxModelList* models = FBXHelper::GetModelList();
 	mImGuiID = 0;
-	
-	char szTxt[256];
-	std::string infoTxt = "";
-	memset(szTxt, 0, 256);
-	sprintf_s(szTxt, "模型数: %d\n", models->mMeshes.Count());
-	infoTxt += szTxt;
-	for (int i = 0; i < models->mMeshes.Count(); ++i)
-	{
-		FBXHelper::FbxModel* model = models->mMeshes[i];
-		memset(szTxt, 0, 256);
-		sprintf_s(szTxt, "\t模型 [%d]\n", i + 1);
-		infoTxt += szTxt;
-		memset(szTxt, 0, 256);
-		sprintf_s(szTxt, "\t\t顶点数：%d\n", model->nVertexCount);
-		infoTxt += szTxt;
-		memset(szTxt, 0, 256);
-		sprintf_s(szTxt, "\t\t面数：%d\n", model->nIndexCount / 3);
-		infoTxt += szTxt;
-	}
-	memset(szTxt, 0, 256);
-	sprintf_s(szTxt, "蒙皮数：%d\n", models->mSkins.Count());
-	infoTxt += szTxt;
 
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	ImGui::SetNextWindowSize(ImVec2(256, (float)mHeight));
-	ImGui::Begin(STU("转换器").c_str());
+	ImGui::Begin(STU("转换器").c_str(), NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_MenuBar);
+
+	bool openFlag = false;
+
+	if (ImGui::BeginMenuBar())
+	{
+		if (ImGui::BeginMenu(STU("文件").c_str()))
+		{
+			if (ImGui::MenuItem(STU("打开模型").c_str(), NULL))
+			{
+				openFlag = true;
+			}
+			if (ImGui::MenuItem(STU("关闭模型").c_str(), NULL))
+			{
+				OnQuit();
+			}
+			ImGui::EndMenu();
+		}
+		ImGui::EndMenuBar();
+	}
+	if (openFlag)
+	{
+		fdOpen.Open();
+		openFlag = false;
+	}
+	if (fdOpen.DoModal())
+	{
+		std::string path = fdOpen.directory;
+		path += fdOpen.fileName;
+		OpenFile(path.c_str());
+	}
+
+	if (!FBXHelper::IsWorking())
+	{
+		ImGui::End();
+		return;
+	}
+
+	FBXHelper::FbxModelList* models = FBXHelper::GetModelList();
 
 	if (mMeshRenderer->mIsSkinnedMesh)
 	{
@@ -224,6 +304,28 @@ void Test::OnGUI()
 
 	if (ImGui::CollapsingHeader(STU("模型信息").c_str(), ImGuiTreeNodeFlags_DefaultOpen))
 	{
+		char szTxt[256];
+		std::string infoTxt = "";
+		memset(szTxt, 0, 256);
+		sprintf_s(szTxt, "模型数: %d\n", models->mMeshes.Count());
+		infoTxt += szTxt;
+		for (int i = 0; i < models->mMeshes.Count(); ++i)
+		{
+			FBXHelper::FbxModel* model = models->mMeshes[i];
+			memset(szTxt, 0, 256);
+			sprintf_s(szTxt, "\t模型 [%d]\n", i + 1);
+			infoTxt += szTxt;
+			memset(szTxt, 0, 256);
+			sprintf_s(szTxt, "\t\t顶点数：%d\n", model->nVertexCount);
+			infoTxt += szTxt;
+			memset(szTxt, 0, 256);
+			sprintf_s(szTxt, "\t\t面数：%d\n", model->nIndexCount / 3);
+			infoTxt += szTxt;
+		}
+		memset(szTxt, 0, 256);
+		sprintf_s(szTxt, "蒙皮数：%d\n", models->mSkins.Count());
+		infoTxt += szTxt;
+
 		ImGui::Indent(15.0f);
 		ImGui::Text(STU(infoTxt).c_str());
 		ImGui::Unindent(15.0f);
@@ -233,6 +335,9 @@ void Test::OnGUI()
 
 void Test::OnUpdate()
 {
+	if (!FBXHelper::IsWorking())
+		return;
+
 	DWORD curTime = timeGetTime();
 	DWORD timeDelta = curTime - mLastTime;
 	float dt = (float)timeDelta * 0.001f;
@@ -249,9 +354,9 @@ void Test::OnUpdate()
 
 	FBXHelper::UpdateSkeleton();
 
-	if (mShowMesh)
+	if (mShowMesh && mMeshRenderer)
 		mMeshRenderer->Render();
-	if (mShowBone)
+	if (mShowBone && mBoneRenderer)
 		mBoneRenderer->Render();
 
 	mLastTime = curTime;

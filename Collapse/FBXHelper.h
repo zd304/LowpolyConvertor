@@ -96,6 +96,8 @@ namespace FBXHelper
 
 	void UpdateSkeleton();
 
+	bool IsWorking();
+
 	bool EndFBXHelper();
 }
 

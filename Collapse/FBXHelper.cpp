@@ -13,6 +13,7 @@ namespace FBXHelper
 	float mDuration = 0.0f;
 	D3DXVECTOR3 boxMax;
 	D3DXVECTOR3 boxMin;
+	bool isWorking = false;
 
 	static D3DXVECTOR3 Vec3One(1.0f, 1.0f, 1.0f);
 	static D3DXVECTOR3 Vec3Zero(0.0f, 0.0f, 0.0f);
@@ -145,6 +146,8 @@ namespace FBXHelper
 
 	bool BeginFBXHelper(const char* fileName)
 	{
+		isWorking = true;
+
 		InitializeSdkObjects(pFBXSDKManager, pFBXScene);
 
 		bool rst = LoadScene(pFBXSDKManager, pFBXScene, fileName);
@@ -568,6 +571,11 @@ namespace FBXHelper
 		}
 	}
 
+	bool IsWorking()
+	{
+		return isWorking;
+	}
+
 	bool EndFBXHelper()
 	{
 		bool rst = true;
@@ -583,6 +591,7 @@ namespace FBXHelper
 		DestroySdkObjects(pFBXSDKManager, rst);
 		pFBXSDKManager = NULL;
 		pFBXScene = NULL;
+		isWorking = false;
 
 		if (pMeshList)
 		{

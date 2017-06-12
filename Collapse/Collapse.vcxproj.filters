@@ -48,6 +48,9 @@
     <ClCompile Include="BoneRenderer.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="FileDialog.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Collapse.h">
@@ -96,6 +99,9 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="BoneRenderer.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="FileDialog.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

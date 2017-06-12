@@ -3,6 +3,7 @@
 
 #include "inc.h"
 #include "FBXHelper.h"
+#include "FileDialog.h"
 
 class ProgressiveMeshRenderer;
 class BoneRenderer;
@@ -20,6 +21,8 @@ public:
 	void OnGUI();
 
 	void OnQuit();
+
+	void OpenFile(const char* fileName);
 public:
 	IDirect3DDevice9* mDevice;
 	HWND mHwnd;
@@ -32,6 +35,7 @@ public:
 
 	ProgressiveMeshRenderer* mMeshRenderer;
 	BoneRenderer* mBoneRenderer;
+	FileDialog fdOpen;
 
 	int mImGuiID;
 	List<int> mDisireVtxNums;
