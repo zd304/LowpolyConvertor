@@ -5,6 +5,7 @@
 > * [FBX三角形网格导入、导出、渲染](http://usa.autodesk.com/adsk/servlet/pc/item?siteID=123112&id=10775847)
 > * [一种简单、快速、高效的多边形减面算法](http://dev.gameres.com/Program/Visual/3D/PolygonReduction.pdf)
 > * 顶点分离算法
+> * [ImGui](https://github.com/ocornut/imgui)
 
 ------
 
@@ -20,4 +21,13 @@
 
 摆脱美术资源的限制，使用转换器把平滑的多边形转换成低多边形风格吧
 
-![sceneview icon](http://a3.qpic.cn/psb?/V12mT4Tb1WqVF1/oIIDNy.pmW6IgoKO5hpD0kywRa4a.ndYsdmxzdou3dc!/b/dB8BAAAAAAAA&bo=5gDlAAAAAAADByE!&rf=viewer_4)
+### 1.打开一个Fbx网格文件
+
+![1](https://github.com/zd304/lowpolyconverter/blob/master/readme/1.png)
+
+### 2.编辑Fbx网格文件
+
+![2](https://github.com/zd304/lowpolyconverter/blob/master/readme/2.png)
+
+>蒙皮模型减面
+>*使用坍塌算法和顶点分离算法处理蒙皮模型
