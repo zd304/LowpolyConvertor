@@ -1,7 +1,6 @@
 #include "ProgressiveMeshRenderer.h"
 #include "FBXHelper.h"
 #include "Collapse.h"
-#include <algorithm>
 
 DWORD fvf = D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_DIFFUSE | D3DFVF_TEX1;
 
@@ -29,6 +28,7 @@ struct CustomVertex_t
 ProgressiveMeshRenderer::ProgressiveMeshRenderer(IDirect3DDevice9* device)
 {
 	mDevice = device;
+	mCurMeshIndex = 0;
 
 	FBXHelper::FbxModelList* models = FBXHelper::GetModelList();
 	if (models == NULL)
@@ -157,13 +157,14 @@ void ProgressiveMeshRenderer::Collapse(int* vtxnums, int meshCount, bool seperat
 			}
 			BindVertexBuffer bvb;
 			bvb.vb = pvb_t;
-			bvb.count = vertexNum;
+			bvb.vcount = vertexNum;
 
-			mBindVertexBuffer.Add(bvb);
 			mFBSkin.Add(skin);
 
 			void* ib = NULL;
 			pMesh->LockIndexBuffer(0, (void**)&ib);
+			bvb.ib = new unsigned int[buffer->i_count];
+			bvb.icount = buffer->i_count;
 			if (!seperation)
 				memcpy(ib, buffer->indices, buffer->i_count * buffer->i_stride);
 			else
@@ -191,11 +192,14 @@ void ProgressiveMeshRenderer::Collapse(int* vtxnums, int meshCount, bool seperat
 					cv3.normal = n;
 				}
 			}
+			memcpy(bvb.ib, ib, buffer->i_count * buffer->i_stride);
 			pMesh->UnlockIndexBuffer();
 			void* vb = NULL;
 			pMesh->LockVertexBuffer(0, (void**)&vb);
 			memcpy(vb, pvb_t, vertexNum * sizeof(CustomVertex_t));
 			pMesh->UnlockVertexBuffer();
+
+			mBindVertexBuffer.Add(bvb);
 
 			pvb_t = NULL;
 			mMeshes.Add(pMesh);
@@ -242,8 +246,8 @@ void ProgressiveMeshRenderer::Clear()
 	for (int i = 0; i < mBindVertexBuffer.Count(); ++i)
 	{
 		BindVertexBuffer& bvb = mBindVertexBuffer[i];
-		if (bvb.vb)
-			delete [] bvb.vb;
+		SAFE_DELETE_ARRAY(bvb.vb);
+		SAFE_DELETE_ARRAY(bvb.ib);
 	}
 	mBindVertexBuffer.Clear();
 }
@@ -264,7 +268,7 @@ void ProgressiveMeshRenderer::Render()
 			mesh->LockVertexBuffer(0, (void**)&vertices);
 
 			BindVertexBuffer& bvb = mBindVertexBuffer[m];
-			for (int i = 0; i < bvb.count; ++i)
+			for (int i = 0; i < bvb.vcount; ++i)
 			{
 				vertices[i].pos = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
 				vertices[i].normal = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
@@ -308,4 +312,126 @@ void ProgressiveMeshRenderer::Render()
 
 		mesh->DrawSubset(0);
 	}
+}
+
+void ProgressiveMeshRenderer::ModifyMesh(void* node)
+{
+	FbxNode* pNode = (FbxNode*)node;
+	FbxNodeAttribute* attributeType = pNode->GetNodeAttribute();
+	if (attributeType && attributeType->GetAttributeType() == FbxNodeAttribute::eMesh)
+	{
+		FbxMesh* oldMesh = pNode->GetMesh();
+		FbxMesh* pMesh = FbxMesh::Create(FBXHelper::GetFbxScene(), oldMesh->GetName());
+		if (pMesh != NULL)
+		{
+			BindVertexBuffer& bvb = mBindVertexBuffer[mCurMeshIndex];
+			// pos;
+			pMesh->InitControlPoints(bvb.vcount);
+			for (int i = 0; i < bvb.vcount; ++i)
+			{
+				CustomVertex_t& cv = ((CustomVertex_t*)bvb.vb)[i];
+				pMesh->SetControlPointAt(FbxVector4(cv.pos.x, cv.pos.y, cv.pos.z), i);
+			}
+			// normals;
+			FbxGeometryElementNormal* normalElement = pMesh->CreateElementNormal();
+			normalElement->SetMappingMode(FbxLayerElement::eByControlPoint);
+			normalElement->SetReferenceMode(FbxLayerElement::eDirect);
+			FbxLayerElementArrayTemplate<FbxVector4>& normdirectArray = normalElement->GetDirectArray();
+			normdirectArray.Clear();
+			for (int i = 0; i < bvb.vcount; ++i)
+			{
+				CustomVertex_t& cv = ((CustomVertex_t*)bvb.vb)[i];
+				normdirectArray.Add(FbxVector4(cv.normal.x, cv.normal.y, cv.normal.z));
+			}
+			// uv;
+			std::string sUVName = "uv0";
+			FbxGeometryElementUV* uvElement = pMesh->CreateElementUV(sUVName.c_str());
+			uvElement->SetMappingMode(FbxLayerElement::eByControlPoint);
+			uvElement->SetReferenceMode(FbxLayerElement::eDirect);
+			FbxLayerElementArrayTemplate<FbxVector2>& uvdirectArray = uvElement->GetDirectArray();
+			uvdirectArray.Clear();
+			for (int i = 0; i < bvb.vcount; ++i)
+			{
+				CustomVertex_t& cv = ((CustomVertex_t*)bvb.vb)[i];
+				uvdirectArray.Add(FbxVector2(cv.uv.x, cv.uv.y));
+			}
+			// index;
+			int triangleCount = bvb.icount / 3;
+			for (int polygonIndex = 0; polygonIndex < triangleCount; ++polygonIndex)
+			{
+				pMesh->BeginPolygon(polygonIndex);
+				for (int i = 0; i < 3; ++i)
+				{
+					pMesh->AddPolygon(((unsigned int*)bvb.ib)[polygonIndex * 3 + i]);
+				}
+				pMesh->EndPolygon();
+			}
+			// skin;
+			if (mIsSkinnedMesh)
+			{
+				FocuseBoneSkin_t* fbs = mFBSkin[mCurMeshIndex];
+				FbxScene* scene = FBXHelper::GetFbxScene();
+				FbxSkin* skin = FbxSkin::Create(scene, pMesh->GetName());
+
+				FbxSkin* oldSkin = (FbxSkin*)oldMesh->GetDeformer(0, FbxDeformer::eSkin);
+				for (int ci = 0; ci < oldSkin->GetClusterCount(); ++ci)
+				{
+					FbxCluster* oldCluster = oldSkin->GetCluster(ci);
+					FbxCluster* cluster = FbxCluster::Create(scene, oldCluster->GetName());
+
+					cluster->SetLink(oldCluster->GetLink());
+					cluster->SetLinkMode(oldCluster->GetLinkMode());
+
+					FbxAMatrix transformLinkMatrix, transformMatrix;
+					oldCluster->GetTransformLinkMatrix(transformLinkMatrix);
+					cluster->SetTransformLinkMatrix(transformLinkMatrix);
+
+					oldCluster->GetTransformMatrix(transformMatrix);
+					cluster->SetTransformMatrix(transformMatrix);
+
+					FocuseBoneSkin_t::IT_FBS it = fbs->skins.find(cluster->GetLink()->GetName());
+					if (it != fbs->skins.end())
+					{
+						FocusBoneWeight_t* fbw = it->second;
+						for (int w = 0; fbw && w != fbw->weight.Count(); ++w)
+						{
+							int index = fbw->index[w];
+							double weight = fbw->weight[w];
+							cluster->AddControlPointIndex(index, weight);
+						}
+					}
+
+					skin->AddCluster(cluster);
+				}
+				pMesh->AddDeformer(skin);
+			}
+			++mCurMeshIndex;
+		}
+
+		pNode->SetNodeAttribute(pMesh);
+		oldMesh->Destroy();
+	}
+
+	for (int i = 0; i < pNode->GetChildCount(); ++i)
+	{
+		ModifyMesh(pNode->GetChild(i));
+	}
+}
+
+void ProgressiveMeshRenderer::SaveFile(const char* filename)
+{
+	FbxManager* fbxManger = FBXHelper::GetFbxManager();
+	if (!fbxManger) return;
+	FbxScene* fbxScene = FBXHelper::GetFbxScene();
+	if (!fbxScene) return;
+
+	mCurMeshIndex = 0;
+
+	FbxNode* root = fbxScene->GetRootNode();
+
+	ModifyMesh(root);
+
+	mCurMeshIndex = 0;
+
+	FBXHelper::SaveScene(fbxManger, fbxScene, filename);
 }

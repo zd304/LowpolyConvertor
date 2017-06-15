@@ -279,6 +279,7 @@ bool FileDialog::DoModal()
 		ImGui::Text(STU("文件名").c_str());
 		ImGui::SameLine();
 		std::string curFileName = STU(cur_filename);
+		std::string curFileNameOld = curFileName;
 		char tempFilename[MAX_PATH];
 		memset(tempFilename, 0, MAX_PATH);
 		memcpy(tempFilename, curFileName.c_str(), curFileName.size());
@@ -313,6 +314,11 @@ bool FileDialog::DoModal()
 		}
 		else if (mUsage == eFileDialogUsage_SaveFile)
 		{
+			if (curFileNameOld != curFileName)
+			{
+				fileName = "";
+			}
+
 			bool fileExist = false;
 			bool close = false;
 			if (ImGui::Button(STU("保存").c_str(), ImVec2(80, 40)) && directory[0] != '\0')

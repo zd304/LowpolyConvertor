@@ -2,11 +2,7 @@
 #define __FBX_HELPER_H__
 
 #include "FBXCommon.h"
-#include <d3dx9.h>
-#include "list.h"
-#include <string>
-#include <map>
-#include <vector>
+#include "inc.h"
 
 namespace FBXHelper
 {
@@ -97,6 +93,10 @@ namespace FBXHelper
 	void UpdateSkeleton();
 
 	bool IsWorking();
+
+	FbxManager* GetFbxManager();
+
+	FbxScene* GetFbxScene();
 
 	bool EndFBXHelper();
 }

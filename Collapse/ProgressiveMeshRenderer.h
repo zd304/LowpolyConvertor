@@ -1,11 +1,7 @@
 #ifndef __PROGRESSIVE_MESH_RENDERER_H__
 #define __PROGRESSIVE_MESH_RENDERER_H__
 
-#include <d3dx9.h>
-#include <d3d9.h>
-#include <string>
-#include <map>
-#include "list.h"
+#include "inc.h"
 
 struct PMeshVertex_Tmp
 {
@@ -33,7 +29,9 @@ struct PMeshWeight
 struct BindVertexBuffer
 {
 	void* vb;
-	int count;
+	int vcount;
+	void* ib;
+	int icount;
 };
 
 struct FocuseBoneSkin_t;
@@ -46,8 +44,10 @@ public:
 
 	void Collapse(int* facenums, int meshCount, bool seperation = false);
 	void Render();
+	void SaveFile(const char* filename);
 private:
 	void Clear();
+	void ModifyMesh(void* pNode);
 public:
 	// 原始模型数据;
 	List<PMeshModel*> mModels;
@@ -59,6 +59,8 @@ public:
 	bool mIsSkinnedMesh;
 	// 关注于骨骼的蒙皮信息（便于CPU蒙皮）;
 	List<FocuseBoneSkin_t*> mFBSkin;
+private:
+	int mCurMeshIndex;
 };
 
 #endif

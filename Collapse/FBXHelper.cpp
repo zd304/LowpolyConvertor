@@ -1,5 +1,4 @@
 #include "FBXHelper.h"
-#include <string>
 
 namespace FBXHelper
 {
@@ -574,6 +573,16 @@ namespace FBXHelper
 	bool IsWorking()
 	{
 		return isWorking;
+	}
+
+	FbxManager* GetFbxManager()
+	{
+		return pFBXSDKManager;
+	}
+
+	FbxScene* GetFbxScene()
+	{
+		return pFBXScene;
 	}
 
 	bool EndFBXHelper()

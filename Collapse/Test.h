@@ -36,6 +36,7 @@ public:
 	ProgressiveMeshRenderer* mMeshRenderer;
 	BoneRenderer* mBoneRenderer;
 	FileDialog fdOpen;
+	FileDialog fdSave;
 
 	int mImGuiID;
 	List<int> mDisireVtxNums;

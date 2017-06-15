@@ -91,6 +91,10 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 	fdOpen.ext = "fbx";
 	fdOpen.dlgName = "打开模型";
 	fdOpen.SetDefaultDirectory(sCurPath);
+	fdSave.ext = "fbx";
+	fdSave.dlgName = "保存模型";
+	fdSave.SetDefaultDirectory(sCurPath);
+	fdSave.mUsage = eFileDialogUsage_SaveFile;
 
 	mLastTime = timeGetTime();
 
@@ -168,6 +172,7 @@ void Test::OnGUI()
 	ImGui::Begin(STU("转换器").c_str(), NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_MenuBar);
 
 	bool openFlag = false;
+	bool saveFlag = false;
 
 	if (ImGui::BeginMenuBar())
 	{
@@ -176,6 +181,11 @@ void Test::OnGUI()
 			if (ImGui::MenuItem(STU("打开模型").c_str(), NULL))
 			{
 				openFlag = true;
+			}
+			if (ImGui::MenuItem(STU("保存模型").c_str(), (const char*)NULL, (bool*)NULL, mMeshRenderer != NULL))
+			{
+				//mMeshRenderer->SaveFile("test.fbx");
+				saveFlag = true;
 			}
 			if (ImGui::MenuItem(STU("关闭模型").c_str(), NULL))
 			{
@@ -195,6 +205,18 @@ void Test::OnGUI()
 		std::string path = fdOpen.directory;
 		path += fdOpen.fileName;
 		OpenFile(path.c_str());
+	}
+	if (saveFlag)
+	{
+		fdSave.Open();
+		saveFlag = false;
+	}
+	if (fdSave.DoModal())
+	{
+		std::string path = fdSave.directory;
+		path += fdSave.fileName;
+		printf("Save: %s\n", path.c_str());
+		mMeshRenderer->SaveFile(path.c_str());
 	}
 
 	if (!FBXHelper::IsWorking())
