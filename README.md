@@ -1,11 +1,23 @@
-# lowpolyconverter
+# 欢迎使用低多边形（low poly）转换器
 
-## convert normal mesh to lowpoly style mesh
+本工具包含以下内容：
 
-1.try to draw the fbx model on the screen.
+> * [FBX三角形网格导入、导出、渲染](http://usa.autodesk.com/adsk/servlet/pc/item?siteID=123112&id=10775847)
+> * [一种简单、快速、高效的多边形减面算法](http://dev.gameres.com/Program/Visual/3D/PolygonReduction.pdf)
+> * 顶点分离算法
+
+------
+
+独立游戏通常由比较小规模的团队或个人开发，由于资源有限，在游戏美术上很难像3A游戏公司那样把所有美术资源都花费大量精力去制作。但这并不意味着独立游戏美术逊色于大型游戏美术，相反，独立游戏的美术风格独特而又具有表现力，一些拥有优秀美术风格的独立游戏甚至能称之为艺术作品。
+
+## 什么是低多边形（low poly）
+
+低多边形起源于20世纪90年代的计算机三维建模，在当时，由于计算机性能和游戏引擎等制作条件的限制，计算机三维建模做不到像如今那样精细，只能以减少模型面数来平衡游戏的性能。不过最近两年，复古之风盛行，这种低多边形的建模又变得逐渐流行起来了，原因不再是因为最初为了游戏性能而做出妥协，而是人们发现这种美术风格能给我们的视觉感官带来一种前所未有的刺激。
+
+低多边形有着简约、抽象的特征，其棱角分明、结构激进的风格能产生强大的视觉冲击力；没有太复杂的细节，却又能表达物体最重要的特征，这种能够降低游戏开销又能增强视觉效果的美术风格受到了许多独立游戏开发者的青睐。
+
+## 如何使用低多边形转换器
+
+摆脱美术资源的限制，使用转换器把平滑的多边形转换成低多边形风格吧
 
 ![sceneview icon](http://a3.qpic.cn/psb?/V12mT4Tb1WqVF1/oIIDNy.pmW6IgoKO5hpD0kywRa4a.ndYsdmxzdou3dc!/b/dB8BAAAAAAAA&bo=5gDlAAAAAAADByE!&rf=viewer_4)
-
-2.try implement a kind of algorithm to collapse the model.
-
-the next thing to do is collapse skinned mesh and save into a fbx file.
