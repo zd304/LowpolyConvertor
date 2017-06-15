@@ -1,6 +1,6 @@
 # 欢迎使用低多边形（low poly）转换器
 
-本工具包含以下内容：
+本工具依赖以下内容：
 
 > * [FBX三角形网格导入、导出、渲染](http://usa.autodesk.com/adsk/servlet/pc/item?siteID=123112&id=10775847)
 > * [一种简单、快速、高效的多边形减面算法](http://dev.gameres.com/Program/Visual/3D/PolygonReduction.pdf)
@@ -23,9 +23,13 @@
 
 ### 1.打开一个Fbx网格文件
 
+首先需要一个Fbx文件。
+
 ![1](https://github.com/zd304/lowpolyconverter/blob/master/readme/1.png)
 
 ### 2.编辑Fbx网格文件
+
+根据需要改变网格模型。
 
 ![2](https://github.com/zd304/lowpolyconverter/blob/master/readme/2.png)
 
