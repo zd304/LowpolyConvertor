@@ -25,13 +25,13 @@
 
 首先需要一个Fbx文件。
 
-![1](https://github.com/zd304/lowpolyconverter/blob/master/Readme/1.png)
+![1](https://github.com/zd304/lowpolyconverter/blob/master/Instruct/1.png)
 
 ### 2.编辑Fbx网格文件
 
 根据需要改变网格模型。
 
-![2](https://github.com/zd304/lowpolyconverter/blob/master/Readme/2.png)
+![2](https://github.com/zd304/lowpolyconverter/blob/master/Instruct/2.png)
 
 > * 蒙皮模型减面【使用坍塌算法和顶点分离算法处理蒙皮模型
 >> * 预期顶点数【坍塌后，模型预期能减少到得的顶点数
@@ -48,8 +48,8 @@
 
 ### 3.转换为低多边形网格模型
 
-![3](https://github.com/zd304/lowpolyconverter/blob/master/Readme/3.png)
+![3](https://github.com/zd304/lowpolyconverter/blob/master/Instruct/3.png)
 
 ### 4.保存为Fbx网格模型
 
-![4](https://github.com/zd304/lowpolyconverter/blob/master/Readme/4.png)
+![4](https://github.com/zd304/lowpolyconverter/blob/master/Instruct/4.png)
