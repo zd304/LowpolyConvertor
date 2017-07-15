@@ -33,3 +33,6 @@ Collapse/Debug/
 Debug/Collapse.ilk
 Debug/Collapse.pdb
 Debug/libfbxsdk.dll
+/Bin_Debug
+/Temp
+/Bin/*.pdb

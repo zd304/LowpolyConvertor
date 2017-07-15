@@ -17,9 +17,11 @@ D3DDEVTYPE deviceType = D3DDEVTYPE_HAL;
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	LPSTR lpCmdLine, int nCmdShow)
 {
+#ifdef _DEBUG
 	AllocConsole();
-	
 	freopen("conout$", "w", stdout);
+#endif
+
 	Test test;
 
 	WNDCLASS wc = { 0 };

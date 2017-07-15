@@ -24,7 +24,7 @@ Test::~Test()
 void LoadTextures(IDirect3DDevice9* device)
 {
 	LPDIRECT3DTEXTURE9 p = NULL;
-	D3DXCreateTextureFromFileEx(device, "disk.png",
+	D3DXCreateTextureFromFileEx(device, "../Image/disk.png",
 		D3DX_FROM_FILE,
 		D3DX_FROM_FILE,
 		D3DX_DEFAULT,
@@ -39,7 +39,7 @@ void LoadTextures(IDirect3DDevice9* device)
 		&p);
 	Global::mDiskTexID = (ImTextureID)p;
 	p = NULL;
-	D3DXCreateTextureFromFileEx(device, "folder.png",
+	D3DXCreateTextureFromFileEx(device, "../Image/folder.png",
 		D3DX_FROM_FILE,
 		D3DX_FROM_FILE,
 		D3DX_DEFAULT,
@@ -54,7 +54,7 @@ void LoadTextures(IDirect3DDevice9* device)
 		&p);
 	Global::mFolderTexID = (ImTextureID)p;
 	p = NULL;
-	D3DXCreateTextureFromFileEx(device, "file.png",
+	D3DXCreateTextureFromFileEx(device, "../Image/file.png",
 		D3DX_FROM_FILE,
 		D3DX_FROM_FILE,
 		D3DX_DEFAULT,
@@ -80,7 +80,7 @@ void Test::OnInit(HWND hwnd, IDirect3DDevice9* device)
 	mHeight = (int)(rc.bottom - rc.top);
 
 	ImGuiIO& io = ImGui::GetIO();
-	io.Fonts->AddFontFromFileTTF("msyh.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesChinese());
+	io.Fonts->AddFontFromFileTTF("../Font/msyh.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesChinese());
 	LoadTextures(device);
 
 	char szPath[MAX_PATH] = { 0 };
