@@ -191,6 +191,11 @@ void Test::OnGUI()
 			{
 				OnQuit();
 			}
+			ImGui::Separator();
+			if (ImGui::MenuItem(STU("ÍË³ö").c_str(), NULL))
+			{
+				PostQuitMessage(0);
+			}
 			ImGui::EndMenu();
 		}
 		ImGui::EndMenuBar();
