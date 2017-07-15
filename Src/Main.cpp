@@ -178,25 +178,26 @@ LRESULT CALLBACK WndProc(
 {
 	if (ImGui_ImplDX9_WndProcHandler(hwnd, msg, wParam, lParam))
 		return true;
-
+	
 	switch (msg)
 	{
 	case WM_SIZE:
-		if (Device != NULL && wParam != SIZE_MINIMIZED)
-		{
-			ImGui_ImplDX9_InvalidateDeviceObjects();
-			g_d3dpp.BackBufferWidth = LOWORD(lParam);
-			g_d3dpp.BackBufferHeight = HIWORD(lParam);
-			HRESULT hr = Device->Reset(&g_d3dpp);
-			if (hr == D3DERR_INVALIDCALL)
-				IM_ASSERT(0);
-			ImGui_ImplDX9_CreateDeviceObjects();
-		}
+	{
+		//if (Device != NULL && wParam != SIZE_MINIMIZED)
+		//{
+		//	ImGui_ImplDX9_InvalidateDeviceObjects();
+		//	g_d3dpp.BackBufferWidth = LOWORD(lParam);
+		//	g_d3dpp.BackBufferHeight = HIWORD(lParam);
+		//	HRESULT hr = Device->Reset(&g_d3dpp);
+		//	if (hr == D3DERR_INVALIDCALL)
+		//		IM_ASSERT(0);
+		//	ImGui_ImplDX9_CreateDeviceObjects();
+		//}
 		return 0;
+	}
 	case WM_DESTROY:
 		::PostQuitMessage(0);
 		break;
-
 	case WM_KEYDOWN:
 		if (wParam == VK_ESCAPE)
 			::DestroyWindow(hwnd);
