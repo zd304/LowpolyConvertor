@@ -70,15 +70,18 @@ ProgressiveMeshRenderer::ProgressiveMeshRenderer(IDirect3DDevice9* device)
 		if (models->mSkins.Count() > i)
 		{
 			FBXHelper::FbxSkinInfo* skin = models->mSkins[i];
-			if (skin->size != fbxmodel->nVertexCount)
-				continue;
-			for (unsigned int j = 0; j < skin->size; ++j)
+			if (skin)
 			{
-				FBXHelper::FbxBoneWeight* bw = &(skin->weights[j]);
-				pmmodel->pVB[j].skin = bw;
-				if (bw->boneName.Count() == 0)
+				if (skin->size != fbxmodel->nVertexCount)
+					continue;
+				for (unsigned int j = 0; j < skin->size; ++j)
 				{
-					//printf("vertex(%d) has no any skin info!\n", j);
+					FBXHelper::FbxBoneWeight* bw = &(skin->weights[j]);
+					pmmodel->pVB[j].skin = bw;
+					if (bw->boneName.Count() == 0)
+					{
+						//printf("vertex(%d) has no any skin info!\n", j);
+					}
 				}
 			}
 		}
@@ -105,7 +108,7 @@ ProgressiveMeshRenderer::~ProgressiveMeshRenderer()
 void ProgressiveMeshRenderer::Collapse(int* vtxnums, int meshCount, bool seperation)
 {
 	Clear();
-	meshCount = std::min<int>(meshCount, mModels.Count());
+	meshCount = std::max<int>(meshCount, mModels.Count());
 	for (int i = 0; i < meshCount; ++i)
 	{
 		PMeshModel* pmmodel = mModels[i];
@@ -374,7 +377,7 @@ void ProgressiveMeshRenderer::ModifyMesh(void* node)
 				FbxSkin* skin = FbxSkin::Create(scene, pMesh->GetName());
 
 				FbxSkin* oldSkin = (FbxSkin*)oldMesh->GetDeformer(0, FbxDeformer::eSkin);
-				for (int ci = 0; ci < oldSkin->GetClusterCount(); ++ci)
+				for (int ci = 0; oldSkin && ci < oldSkin->GetClusterCount(); ++ci)
 				{
 					FbxCluster* oldCluster = oldSkin->GetCluster(ci);
 					FbxCluster* cluster = FbxCluster::Create(scene, oldCluster->GetName());

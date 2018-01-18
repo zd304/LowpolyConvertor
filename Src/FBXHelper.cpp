@@ -2,17 +2,17 @@
 
 namespace FBXHelper
 {
-	FbxManager* pFBXSDKManager = NULL;
-	FbxScene* pFBXScene = NULL;
-	FbxModelList* pMeshList = NULL;
-	FbxBoneMap* pSkeleton = NULL;
-	FbxAnimationEvaluator* pAnimEvaluator = NULL;
-	DWORD mLastTime = 0l;
-	float mAnimTime = 0.0f;
-	float mDuration = 0.0f;
-	D3DXVECTOR3 boxMax;
-	D3DXVECTOR3 boxMin;
-	bool isWorking = false;
+	static FbxManager* pFBXSDKManager = NULL;
+	static FbxScene* pFBXScene = NULL;
+	static FbxModelList* pMeshList = NULL;
+	static FbxBoneMap* pSkeleton = NULL;
+	static FbxAnimationEvaluator* pAnimEvaluator = NULL;
+	static DWORD mLastTime = 0l;
+	static float mAnimTime = 0.0f;
+	static float mDuration = 0.0f;
+	static D3DXVECTOR3 boxMax;
+	static D3DXVECTOR3 boxMin;
+	static bool isWorking = false;
 
 	static D3DXVECTOR3 Vec3One(1.0f, 1.0f, 1.0f);
 	static D3DXVECTOR3 Vec3Zero(0.0f, 0.0f, 0.0f);
@@ -201,7 +201,10 @@ namespace FBXHelper
 	{
 		int skinCount = pMesh->GetDeformerCount(FbxDeformer::eSkin);
 		if (skinCount == 0)
+		{
+			pMeshList->mSkins.Add(NULL);
 			return NULL;
+		}
 		FbxSkinInfo* skinInfo = new FbxSkinInfo();
 		pMeshList->mSkins.Add(skinInfo);
 		// スキンの方を函誼;
