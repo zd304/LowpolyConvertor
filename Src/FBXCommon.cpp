@@ -41,6 +41,7 @@ namespace FBXHelper
 		if (pExitStatus) FBXSDK_printf("Program Success!\n");
 	}
 
+
 	bool SaveScene(FbxManager* pManager, FbxDocument* pScene, const char* pFilename, int pFileFormat, bool pEmbedMedia)
 	{
 		int lMajor, lMinor, lRevision;
@@ -107,7 +108,7 @@ namespace FBXHelper
 		int lFileMajor, lFileMinor, lFileRevision;
 		int lSDKMajor, lSDKMinor, lSDKRevision;
 		//int lFileFormat = -1;
-		int i, lAnimStackCount;
+		int lAnimStackCount;
 		bool lStatus;
 		char lPassword[1024];
 
@@ -153,7 +154,7 @@ namespace FBXHelper
 			FBXSDK_printf("    Current Animation Stack: \"%s\"\n", lImporter->GetActiveAnimStackName().Buffer());
 			FBXSDK_printf("\n");
 
-			for (i = 0; i < lAnimStackCount; i++)
+			for (int i = 0; i < lAnimStackCount; i++)
 			{
 				FbxTakeInfo* lTakeInfo = lImporter->GetTakeInfo(i);
 
@@ -184,8 +185,7 @@ namespace FBXHelper
 
 		// Import the scene.
 		lStatus = lImporter->Import(pScene);
-
-		if (lStatus == false && lImporter->GetStatus().GetCode() == FbxStatus::ePasswordError)
+		if (lStatus == false && lImporter->GetStatus() == FbxStatus::ePasswordError)
 		{
 			FBXSDK_printf("Please enter password: ");
 
@@ -202,10 +202,41 @@ namespace FBXHelper
 
 			lStatus = lImporter->Import(pScene);
 
-			if (lStatus == false && lImporter->GetStatus().GetCode() == FbxStatus::ePasswordError)
+			if (lStatus == false && lImporter->GetStatus() == FbxStatus::ePasswordError)
 			{
 				FBXSDK_printf("\nPassword is wrong, import aborted.\n");
 			}
+		}
+
+		if (!lStatus || (lImporter->GetStatus() != FbxStatus::eSuccess))
+		{
+			FBXSDK_printf("********************************************************************************\n");
+			if (lStatus)
+			{
+				FBXSDK_printf("WARNING:\n");
+				FBXSDK_printf("   The importer was able to read the file but with errors.\n");
+				FBXSDK_printf("   Loaded scene may be incomplete.\n\n");
+			}
+			else
+			{
+				FBXSDK_printf("Importer failed to load the file!\n\n");
+			}
+
+			if (lImporter->GetStatus() != FbxStatus::eSuccess)
+				FBXSDK_printf("   Last error message: %s\n", lImporter->GetStatus().GetErrorString());
+
+			FbxArray<FbxString*> history;
+			lImporter->GetStatus().GetErrorStringHistory(history);
+			if (history.GetCount() > 1)
+			{
+				FBXSDK_printf("   Error history stack:\n");
+				for (int i = 0; i < history.GetCount(); i++)
+				{
+					FBXSDK_printf("      %s\n", history[i]->Buffer());
+				}
+			}
+			FbxArrayDelete<FbxString*>(history);
+			FBXSDK_printf("********************************************************************************\n");
 		}
 
 		// Destroy the importer.

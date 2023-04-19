@@ -35,3 +35,8 @@ Debug/libfbxsdk.dll
 /Bin_Debug
 /Temp
 /Bin/*.pdb
+/DirectX/Include
+/DirectX/Lib
+/FBX/lib
+/FBX/include
+/.vs

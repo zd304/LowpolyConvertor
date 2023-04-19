@@ -1,4 +1,4 @@
-#include "FBXHelper.h"
+ï»¿#include "FBXHelper.h"
 
 namespace FBXHelper
 {
@@ -207,12 +207,12 @@ namespace FBXHelper
 		}
 		FbxSkinInfo* skinInfo = new FbxSkinInfo();
 		pMeshList->mSkins.Add(skinInfo);
-		// ¥¹¥­¥ó¤ÎÊý¤òÈ¡µÃ;
+		// ã‚¹ã‚­ãƒ³ã®æ•°ã‚’å–å¾—;
 		skinInfo->weights = new FbxBoneWeight[vtxCount];
 		skinInfo->size = vtxCount;
 		for (int s = 0; s < skinCount; ++s)
 		{
-			// s·¬Ä¿¤Î¥¹¥­¥ó¤òÈ¡µÃ;
+			// sç•ªç›®ã®ã‚¹ã‚­ãƒ³ã‚’å–å¾—;
 			FbxSkin* skinDeformer = (FbxSkin*)pMesh->GetDeformer(s, FbxDeformer::eSkin);
 			int cpic = skinDeformer->GetControlPointIndicesCount();
 
@@ -231,7 +231,7 @@ namespace FBXHelper
 					FbxBone* bone = itbm->second;
 					FbxAMatrix transformLinkMatrix, transformMatrix, matBindPose;
 
-					// ¥Ü©`¥ó¤Î³õÆÚ×Ë„Ý¤òÈ¡µÃ;
+					// ãƒœãƒ¼ãƒ³ã®åˆæœŸå§¿å‹¢ã‚’å–å¾—;
 					cluster->GetTransformLinkMatrix(transformLinkMatrix);
 
 					cluster->GetTransformMatrix(transformMatrix);

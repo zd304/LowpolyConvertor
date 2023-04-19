@@ -53,3 +53,13 @@
 ### 4.保存为Fbx网格模型
 
 ![4](https://github.com/zd304/lowpolyconverter/blob/master/ReadMe/4.png)
+
+## 运行工程
+
+由于lib文件太大，工程里不再包含。
+
+如果要用Visual Studio运行项目，请先下载FBX SDK和DirectX 9.0 SDK。
+
+* 将FBX SDK下的include文件夹和lib文件夹复制粘贴到“LowpolyConvertor/FBX/”文件夹下。
+
+* 将DirectX SDK下的Include文件夹和Lib文件夹复制粘贴到“LowpolyConvertor/DirectX/”文件夹下。

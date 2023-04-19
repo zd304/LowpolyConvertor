@@ -1,4 +1,4 @@
-#include "ProgressiveMeshRenderer.h"
+ï»¿#include "ProgressiveMeshRenderer.h"
 #include "FBXHelper.h"
 #include "Collapse.h"
 
@@ -141,7 +141,7 @@ void ProgressiveMeshRenderer::Collapse(int* vtxnums, int meshCount, bool seperat
 				vtx_t.color = vtx->color;
 				vtx_t.uv = vtx->uv;
 
-				// °Ñ¹Ø×¢µãÐÅÏ¢µÄÃÉÆ¤ÐÅÏ¢¸ÄÎª¹Ø×¢¹Ç÷ÀµÄÃÉÆ¤ÐÅÏ¢£¬·½±ãäÖÈ¾;
+				// æŠŠå…³æ³¨ç‚¹ä¿¡æ¯çš„è’™çš®ä¿¡æ¯æ”¹ä¸ºå…³æ³¨éª¨éª¼çš„è’™çš®ä¿¡æ¯ï¼Œæ–¹ä¾¿æ¸²æŸ“;
 				if (!mIsSkinnedMesh) continue;
 				FBXHelper::FbxBoneWeight* bw = (FBXHelper::FbxBoneWeight*)vtx->skin;
 				if (!bw) continue;
